@@ -1,0 +1,68 @@
+from contextlib import contextmanager
+
+from kiwipiepy import Kiwi
+
+from korean_spell_checker.utils.file_io import get_all_file_paths, make_dictionary_list, make_termbase_list
+from korean_spell_checker.models.interface import Tag
+
+class KoTokenizer(Kiwi):
+    _instance = None
+    DEFAULT_DICTIONARY_PATH = "korean_spell_checker/dictionary"
+    DEFAULT_TERMBASE_PATH = "termbase"
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not getattr(self, '_initialized', False):
+            super().__init__(model_type='cong-global')
+            
+            self._debug = False
+            self._make_dictionary()
+            self._add_termbase()
+            self._initialized = True
+
+    def _make_dictionary(self):
+        dictionary_files = get_all_file_paths(self.DEFAULT_DICTIONARY_PATH, "xlsx")
+        for file in dictionary_files:
+            for words in make_dictionary_list(file):
+                word, tag = words
+                self.add_user_word(word=word, tag=tag)
+
+    def _add_termbase(self):
+        termbase_files = get_all_file_paths(self.DEFAULT_TERMBASE_PATH, "csv")
+        for file in termbase_files:
+            for word in make_termbase_list(file):
+                self.add_user_word(word, Tag.일반명사)        
+
+    def tokenize(self, *args, **kwargs):
+        kwargs.setdefault('compatible_jamo', True)
+        return super().tokenize(*args, **kwargs)
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, value: bool):
+        print(f"[KoTokenizer] Debug mode switched to {value}")
+        self._debug = value
+
+    @contextmanager
+    def debug_mode(self):
+        """
+        디버깅 모드 실행. with문과 함께 사용할 것.
+
+        사용 예시
+
+        with KoTokenizer().debug_mode():
+             check_spelling(...)
+        """
+        original_status = self.debug
+        self.debug = True
+        try:
+            yield
+        finally:
+            self.debug = original_status

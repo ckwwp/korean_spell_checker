@@ -1,0 +1,23 @@
+from korean_spell_checker.engines.spell_checker import SpellChecker
+from korean_spell_checker.models.interface import SpellError
+from korean_spell_checker.tokenizations.ko_tokenizer import KoTokenizer
+from korean_spell_checker.models.interface import Tag, SpellErrorType
+
+def tokenize_and_check(checker: SpellChecker, tokenizer: KoTokenizer, text: str) -> list[SpellError]:
+    tokens = tokenizer.tokenize(text)
+    return list(checker.check(tokens))
+
+def assert_error(errors: list[SpellError], tokens: list | None = None):
+    token_info = "\nToken: " + ", ".join(f"{t.form}/{Tag(t.tag).name}" for t in tokens) if tokens else ""
+    assert errors != [], f"Expected errors, but no error asserted.{token_info}"
+
+def assert_no_errors(errors: list[SpellError], checker, tokens: list | None = None,):
+    token_info = "\nToken: " + ", ".join(f"{t.form}/{t.tag}" for t in tokens) if tokens else ""
+    assert errors == [], f"Expected no errors, but got: {errors}{token_info}\n"
+    
+def check_error_type(errors: list[SpellError], error_type: SpellErrorType):
+    for e in errors:
+        if e.error_type == error_type:
+            return
+    error_types = list({e.error_type for e in errors})
+    assert f"Expected {error_type} Error, but got: {", ".join(error_types)}"
