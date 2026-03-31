@@ -4,13 +4,12 @@ from typing import Iterator
 from korean_spell_checker.models.interface import SpellError, SpellErrorType
 
 class TrieNode:
-    __slots__ = ('children', 'output', 'fail', 'error_type')
+    __slots__ = ('children', 'output', 'fail')
 
     def __init__(self):
         self.children: dict[str, TrieNode] = {}
         self.output: set = set()
         self.fail: TrieNode = None
-        self.error_type: SpellErrorType = SpellErrorType.NOT_SET
 
 class RawStringSearcher():
     def __init__(self):
@@ -27,8 +26,7 @@ class RawStringSearcher():
                 curr_node.children[ch] = TrieNode()
             curr_node = curr_node.children[ch]
 
-        curr_node.output.add((msg, len(word)))
-        curr_node.error_type = error_type
+        curr_node.output.add((msg, len(word), error_type))
 
     def add_word_from_list(self, rule_list: tuple[list[tuple[tuple[str], str]]]):
         for words, err_type in rule_list:
@@ -89,9 +87,9 @@ class RawStringSearcher():
             
             if char in current_node.children:
                 current_node = current_node.children[char]
-                for msg, length in current_node.output:
+                for msg, length, err_type in current_node.output:
                     yield SpellError(
-                        error_type=current_node.error_type,
+                        error_type=err_type,
                         error_message=msg,
                         start_index=idx-length+1,
                         end_index=idx+1

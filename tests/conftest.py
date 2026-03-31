@@ -9,3 +9,8 @@ def tokenizer():
 def checker():
     from korean_spell_checker.engines.spell_checker import SpellChecker
     return SpellChecker(debug=True)
+
+@pytest.fixture
+def searcher():
+    from korean_spell_checker.engines.raw_searcher import RawStringSearcher
+    return RawStringSearcher()
