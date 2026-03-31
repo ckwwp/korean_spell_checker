@@ -60,7 +60,13 @@ _CERTAINS: list[KoSpellRules] = [
     *rule()
     .OR(batchim("ㄴ"), NOT(any_batchim()))
     .tag_form(Tag.명사파생접미사, "률")
-    .msg("ㄴ받침 혹은 받침 없는 명사에는 '율'를 사용해야 합니다.")
+    .msg("ㄴ받침 혹은 받침 없는 명사에는 '율'을 사용해야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(any_batchim(), NOT(batchim("ㄴ")))
+    .tag_form(Tag.명사파생접미사, "율")
+    .msg("ㄴ받침 이외의 받침 있는 명사에는 '률'을 사용해야 합니다.")
     .build(),
 
     *rule()
@@ -206,11 +212,12 @@ _OM = [
     .tag(Tag.일반부사)
     .msg("'가능한 한~'으로 써야 합니다.")
     .build(),
-
+    
     *rule()
-    .tag_form(Tag.형용사규칙활용, "누렇")
-    .tag_form(Tag.종결어미, "네")
-    .msg("'누러네'로 써야 합니다.")
+    .tag_form(Tag.동사, "쥐이")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "있")
+    .msg("'쥐어져 있다'가 올바른 표현입니다.")
     .build(),
 ]
 
@@ -230,6 +237,12 @@ _ADD = [
     .tag_form(Tag.동사, "삼가하")
     .msg("'삼가다'가 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.형용사규칙활용, "누렇")
+    .tag_form(Tag.종결어미, "네")
+    .msg("'누러네'로 써야 합니다.")
+    .build(),
 ]
 
 _REP = [
@@ -243,10 +256,10 @@ _REP = [
     .tag_form(Tag.일반명사, "회손")
     .msg("'훼손'이 올바른 표현입니다.")
     .build(),
-
+    
     *rule()
-    .tag_form(Tag.일반명사, "횟초리")
-    .msg("'회초리'가 올바른 표현입니다.")
+    .tag_form(Tag.일반명사, "승락")
+    .msg("'승낙'이 올바른 표현입니다.")
     .build(),
 
     *rule()
@@ -307,6 +320,35 @@ _REP = [
     .tag_form(Tag.형용사, "바르")
     .msg("'올바르다'의 오타가 아닌가요?")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.대명사, "걔")
+    .tag_form(Tag.의존명사, "중")
+    .tags(TagGroup.조사)
+    .msg("'개중(個中)'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "자욱")
+    .msg("'자국'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "실")
+    .tag_form(Tag.일반명사, "날")
+    .tag_form(Tag.형용사, "같")
+    .msg("'실날같은'의 오타가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "의존명사")
+    .msg("'며칠'이 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.감탄사, "임마")
+    .msg("'인마'가 올바른 표현입니다.")
+    .build(),
 ]
 
 _MIF = [
@@ -364,6 +406,34 @@ _MIF = [
     .if_not_spaced()
     .msg("'안팎'이 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "꾀임")
+    .msg("'꾐'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.일반명사)
+    .tag_form(Tag.일반명사, "년도")
+    .msg("'연도'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.형용사, "걸맞")
+    .tag_form(Tag.관형사형전성어미, "는")
+    .msg("'걸맞은'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.종결어미, "ㅂ시요")
+    .msg("'~ㅂ시오'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .OR(tag_form(Tag.연결어미, "던지"), tag_form(Tag.연결어미, "던"))
+    .OR(tag_form(Tag.의존명사, "간"), tag_form(Tag.보조용언, "말"))
+    .msg("'든'이 올바른 표현입니다.")
+    .build(),
 ]
 
 _SHIFT_MISS = [
@@ -404,6 +474,18 @@ _NEED_ML_JUDGE = [
     *rule()
     .tag_form(Tag.동사, "띄")
     .msg("'띠다'의 오기가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사규칙활용, "붓")
+    .tag_form(Tag.명사형전성어미, "기")
+    .msg("'부은 정도'는 '부기'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.긍정지정사)
+    .tag_form(Tag.종결어미, "라던가")
+    .msg("나열할 때는 '라든가'가 올바른 표현입니다.")
     .build(),
 ]
 

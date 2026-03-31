@@ -47,7 +47,8 @@ class TestSpellChecker:
     # 2 ── 맞춤법 및 활용 오류 케이스 (SPELLING)
     @pytest.mark.parametrize("text", [
         "여지껏 발매한 젤다 시리즈 중에서",
-        "팀 컬러는 노랑색."
+        "팀 컬러는 노랑색.",
+        "김홍도의 서민에 대한 풍속화를 보면, 서당에서 횟초리를 맞아서 창피함을 주는 체벌의 모습을 볼 수 있다.",
     ])
     def test_spelling_errors(self, text):
         self._run_test(text, Case(text, error_type=SpellErrorType.SPELLING))

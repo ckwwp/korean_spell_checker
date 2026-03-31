@@ -115,10 +115,10 @@ SPACING_ERRORS: list[KoSpellRules] = [
     .build(),
 
     *rule()
-    .tag_form(Tag.구분부호, ",")
-    .any()
-    .if_not_spaced()
     .NOT(tag(Tag.숫자))
+    .tag_form(Tag.구분부호, ",")
+    .NOT(tag(Tag.숫자))
+    .if_not_spaced()
     .msg("쉼표 뒤에 띄어쓰기가 없습니다.")
     .build(),
 ]
@@ -255,7 +255,7 @@ SPACING_SPECIFIC_ERRORS = [
 
     *rule()
     .tag(Tag.일반명사)
-    .tag(Tag.의존명사) # 이 규칙이랑 아래 규칙이랑 충돌하는데 어떻게 함?
+    .tag(Tag.의존명사)
     .if_not_spaced()
     .msg("의존명사 앞은 띄어 써야 합니다.")
     .build(),
