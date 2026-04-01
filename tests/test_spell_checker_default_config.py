@@ -95,6 +95,8 @@ class TestSpellChecker:
         "네가 밥을 먹던지 말던지 내 알 바 아니야.",
         "유일하게 기다리는 실날같은 희망이 있었다.",
         "작은 정육면체가 쥐여 있었다.",
+        "이 자리를 빌어 그녀에게 고백하려 합니다.",
+        "이 자리를 빌어서 그녀에게 고백하려 합니다.",
     ])
     def test_spelling_errors(self, tokenizer, text):
         self._run_test(tokenizer, Case(text, error_type=SpellErrorType.SPELLING))
@@ -113,6 +115,8 @@ class TestSpellChecker:
         "눈은 영혼의 창이라던가.",
         "즉위하실 날 같은 생각은 안 하고 있다니까요.",
         "너의 손에 칼을 쥐여줄게."
+        "이 자리를 빌려 그녀에게 고백하려 합니다.",
+        "이 자리를 빌려서 그녀에게 고백하려 합니다.",
     ])
     def test_spelling_no_errors(self, tokenizer, text):
-        self._run_test(tokenizer, Case(text, expect_error=False))
+        self._run_test(tokenizer, Case(text, expect_error=False))   

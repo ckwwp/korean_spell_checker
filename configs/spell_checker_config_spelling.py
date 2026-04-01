@@ -434,6 +434,14 @@ _MIF = [
     .OR(tag_form(Tag.의존명사, "간"), tag_form(Tag.보조용언, "말"))
     .msg("'든'이 올바른 표현입니다.")
     .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "자리")
+    .tag_form(Tag.목적격조사, "를")
+    .tag_form(Tag.동사, "빌")
+    .msg("'자리를 빌려'가 올바른 표현입니다.")
+    .build(),
+    
 ]
 
 _SHIFT_MISS = [

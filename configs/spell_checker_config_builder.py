@@ -178,11 +178,11 @@ def _resolve_to_condition(p: AndParam) -> Condition:
     if isinstance(p, _TagSet):
         if len(p.tags) == 1:
             return TagCondition(tag=next(iter(p.tags)))
-        return OrCondition(conditions=tuple(TagCondition(tag=t) for t in p.tags))
+        return TagSetCondition(tags=frozenset(p.tags))
     if isinstance(p, _FormSet):
         if len(p.forms) == 1:
             return FormCondition(form=next(iter(p.forms)))
-        return OrCondition(conditions=tuple(FormCondition(form=f) for f in p.forms))
+        return FormSetCondition(forms=frozenset(p.forms))
     return p  # 이미 Condition
 
 def NOT(condition: "Condition | _TagSet | _FormSet") -> NotCondition:
