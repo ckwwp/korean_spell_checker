@@ -349,6 +349,16 @@ _REP = [
     .tag_form(Tag.감탄사, "임마")
     .msg("'인마'가 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "멀끄러미")
+    .msg("'물끄러미'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "뒤쳐지")
+    .msg("'뒤처지다'가 올바른 표현입니다.")
+    .build(),
 ]
 
 _MIF = [
@@ -409,7 +419,7 @@ _MIF = [
     
     *rule()
     .tag_form(Tag.일반명사, "꾀임")
-    .msg("'꾐'이 올바른 표현입니다.")
+    .msg("'꼬암' 또는 '꾐'이 올바른 표현입니다.")
     .build(),
     
     *rule()
@@ -442,6 +452,99 @@ _MIF = [
     .msg("'자리를 빌려'가 올바른 표현입니다.")
     .build(),
     
+    *rule()
+    .tag_form(Tag.동사, "놀래키")
+    .msg("'놀래키다'는 비표준어이므로 '놀라게 하다' 등으로 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반부사), forms({"두근두근", "중얼중얼"}))
+    .form("거리")
+    .msg("첩어에는 '-거리다'가 결합할 수 없습니다. '두근두근대다' 등으로 수정해 주세요.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "잠구")
+    .msg("'잠그다/담그다'가 올바른 표현입니다. (잠가서, 잠갔다, 잠글)")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "치루")
+    .msg("'치르다'가 올바른 표현입니다. (치러서, 치렀다, 치를)")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "돋구")
+    .msg("'돋우다'의 오기가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "고")
+    .form("으면")
+    .msg("'고다'의 활용형은 '고면'입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "모자르")
+    .msg("'모자라다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "널부러지")
+    .msg("'널브러지다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사불규칙활용, "내딛")
+    .msg("'내디뎌', '내디뎠', '내디딜'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "움추리")
+    .msg("'움츠리다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "짚히")
+    .msg("'짚이다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "붙히")
+    .msg("'붙이다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "맞")
+    .tag_form(Tag.동사, "치")
+    .tag_form(Tag.연결어미, "어")
+    .msg("'맞춰' 혹은 '맞혀'의 오기가 아닌지요?")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.동사), forms({"얽히고섥히", "얼키고설키", "얽키고섥히", "얽히고섥이"}))
+    .msg("'얽히고설키다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사불규칙활용, "줏")
+    .msg("'주워', '주운'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "넓직")
+    .msg("'널찍하다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "가르키")
+    .msg("'가르쳐' 혹은 '가리켜'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "꺼매지")
+    .msg("'까맣게 되다'는 '거메지다/까매지다'입니다.")
+    .build(),
 ]
 
 _SHIFT_MISS = [
@@ -450,6 +553,11 @@ _SHIFT_MISS = [
     .if_not_spaced()
     .tag_form(Tag.선어말어미, "었")
     .msg("'껏'의 오타가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.선어말어미, "겟")
+    .msg("'겠'의 오타가 아닌가요?")
     .build(),
 ]
 
