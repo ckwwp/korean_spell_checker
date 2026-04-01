@@ -1,3 +1,5 @@
+import csv
+from pathlib import Path
 from dataclasses import dataclass
 
 import pytest
@@ -12,50 +14,60 @@ class Case:
     expect_error: bool = True
     error_type: SpellErrorType = None
 
+FILE_ERROR_MAPPING = {
+    "spacing.tsv": SpellErrorType.SPACING,
+    "spelling.tsv": SpellErrorType.SPELLING,
+}
+
+def load_cases_from_tsv(file_path: Path) -> list[Case]:
+    cases = []
+    
+    if not file_path.exists():
+        print(f"\n[Warning] {file_path.name} 파일이 없습니다. 해당 케이스를 건너뜁니다.")
+        return cases
+
+    error_type = FILE_ERROR_MAPPING.get(file_path.name)
+    
+    with open(file_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            correct_text = (row.get("correct") or "").strip()
+            wrong_text = (row.get("wrong") or "").strip()
+
+            if correct_text:
+                cases.append(Case(text=correct_text, expect_error=False))
+            
+            if wrong_text:
+                cases.append(Case(text=wrong_text, expect_error=True, error_type=error_type))
+                
+    return cases
+
+CURRENT_DIR = Path(__file__).parent
+TEST_DATA_DIR = CURRENT_DIR / "raw_data"
+ALL_CASES = []
+
+for filename in FILE_ERROR_MAPPING.keys():
+    file_path = TEST_DATA_DIR / filename
+    ALL_CASES.extend(load_cases_from_tsv(file_path))
+
+
 class TestSpellChecker:
     @pytest.fixture(autouse=True)
     def setup(self, searcher):
         searcher.add_word_from_list(RAW_STRING_RULES)
         self.searcher = searcher
 
-    def _run_test(self, text: str, c: Case):
-        errors = list(self.searcher.search(text))
+    @pytest.mark.parametrize(
+        "c", 
+        ALL_CASES, 
+        ids=lambda c: f"{'ERROR' if c.expect_error else 'PASS'}-{c.text[:15]}"
+    )
+    def test_raw_string_searcher_from_tsv(self, c: Case):
+        errors = list(self.searcher.search(c.text))
 
         if c.expect_error:
-            assert_error_raw_text(errors, text)
+            assert_error_raw_text(errors, c.text)
             if c.error_type:
                 check_error_type(errors, c.error_type)
         else:
-            assert_no_errors_raw_text(errors, text)
-
-    # 1 ── 띄어쓰기 오류 케이스 (SPACING)
-    @pytest.mark.parametrize("text", [
-        "프로모션을 진행해 팬들을 다시 한 번 경악하게 했다.",
-        "팬들에게도 롤모델 이미지가 강하다.",
-    ])
-    def test_spacing_errors(self, text):
-        self._run_test(text, Case(text, error_type=SpellErrorType.SPACING))
-        
-    # 1 ── 띄어쓰기 오류 오탐 방지 케이스
-    @pytest.mark.parametrize("text", [
-        "프로모션을 진행해 팬들을 다시 한번 경악하게 했다.",
-        "팬들에게도 롤 모델 이미지가 강하다."
-    ])
-    def test_spacing_no_errors(self, text):
-        self._run_test(text, Case(text, expect_error=False))
-
-    # 2 ── 맞춤법 및 활용 오류 케이스 (SPELLING)
-    @pytest.mark.parametrize("text", [
-        "여지껏 발매한 젤다 시리즈 중에서",
-        "팀 컬러는 노랑색.",
-        "김홍도의 서민에 대한 풍속화를 보면, 서당에서 횟초리를 맞아서 창피함을 주는 체벌의 모습을 볼 수 있다.",
-    ])
-    def test_spelling_errors(self, text):
-        self._run_test(text, Case(text, error_type=SpellErrorType.SPELLING))
-
-    # 2 ── 맞춤법 및 활용 오탐 방지 케이스
-    @pytest.mark.parametrize("text", [
-        "오승환이 팀에서 떠날 때를 대비해서 오승환의 대체 선수로 손승락을 눈여겨보고 있다는 닛칸스포츠의 기사가 나왔다.",
-    ])
-    def test_spelling_no_errors(self, text):
-        self._run_test(text, Case(text, expect_error=False))
+            assert_no_errors_raw_text(errors, c.text)
