@@ -25,7 +25,7 @@ class KoTokenizer(Kiwi):
             self._initialized = True
 
     def _make_dictionary(self):
-        dictionary_files = get_all_file_paths(self.DEFAULT_DICTIONARY_PATH, "xlsx")
+        dictionary_files = get_all_file_paths(self.DEFAULT_DICTIONARY_PATH, "csv")
         for file in dictionary_files:
             for words in make_dictionary_list(file):
                 word, tag = words

@@ -10,7 +10,7 @@ from korean_spell_checker.models.constants import DEFAULT_EXCEL_COL_NAME, DEFAUL
 warnings.filterwarnings('ignore', message='Data Validation extension is not supported')
 
 def make_dictionary_list(dictionary_file_name: Path) -> list[tuple[str, str]]:
-	df = pd.read_excel(dictionary_file_name, sheet_name="dictionary", dtype=str)
+	df = pd.read_csv(dictionary_file_name, dtype=str)
 	return [(row.word, Tag[row.category]) for row in df.itertuples(index=False)]
 
 def make_termbase_list(termbase_file_name: Path, col_names: list[str] = None) -> list[str]:
