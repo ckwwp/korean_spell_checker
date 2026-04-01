@@ -13,7 +13,7 @@ def assert_error(errors: list[SpellError], tokens: list | None = None):
 
 def assert_no_errors(errors: list[SpellError], checker, tokens: list | None = None,):
     token_info = "\nToken: " + ", ".join(f"{t.form}/{t.tag}" for t in tokens) if tokens else ""
-    assert errors == [], f"Expected no errors, but got: {errors}{token_info}\n"
+    assert errors == [], f"Expected no errors, but got: {errors}\n{token_info}\n"
     
 def assert_error_raw_text(errors: list[SpellError], text: str):
     assert errors != [], f"Expected errors, but no error aseerted. {text}"
