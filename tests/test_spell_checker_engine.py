@@ -328,7 +328,6 @@ class TestEnginePerformanceWithDeafultConfig:
         
         assert elapsed < 1.0, f"엔진이 너무 느립니다! 상태 압축 실패. 소요 시간: {elapsed:.4f}초"
 
-
 if __name__ == "__main__":
     import cProfile
     import pstats

@@ -83,6 +83,20 @@ class LengthCondition(Condition):
 class FirstTokenCondition(Condition):
     def match(self, token: KoToken) -> bool:
         return token.start == 0
+
+@dataclass(frozen=True, slots=True)
+class TagSetCondition(Condition):
+    tags: frozenset[str]
+    
+    def match(self, token: KoToken) -> bool:
+        return token.tag in self.tags
+
+@dataclass(frozen=True, slots=True)
+class FormSetCondition(Condition):
+    forms: frozenset[str]
+    
+    def match(self, token: KoToken) -> bool:
+        return token.form in self.forms
             
 @dataclass(frozen=True, slots=True)
 class AndCondition(Condition):

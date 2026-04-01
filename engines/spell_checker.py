@@ -193,7 +193,7 @@ class SpellChecker:
             
             # ── Phase 2: 출력 수집 & 전이 탐색 ──
             next_cursors.clear()
-            current_step_errors: dict[str, tuple[int, int], str] = {}
+            current_step_errors: dict[str, tuple[SpellErrorType, int, int, str]] = {}
 
             for node, start_idx in expanded_cursors.items():
                 if node.output_message and start_idx < i:
@@ -245,7 +245,7 @@ class SpellChecker:
 
         # 마지막 남은 토큰 처리
         if tokens:
-            final_step_errors: dict[str, tuple[int, int]] = {}
+            final_step_errors: dict[str, tuple[SpellErrorType, int, int, str]] = {}
 
             for node, start_idx in active_cursors.items():
                 for closure_node in node.get_optional_closure():
@@ -268,7 +268,7 @@ class SpellChecker:
                     debug_path=output_path
                 )
     
-    def _update_shortest_match(self, storage: dict[str, tuple[int, int]], msg: str, error_type: SpellErrorType, start: int, end: int, output_path: str) -> None:
+    def _update_shortest_match(self, storage: dict[str, tuple[SpellErrorType, int, int, str]], msg: str, error_type: SpellErrorType, start: int, end: int, output_path: str) -> None:
         if msg not in storage:
             storage[msg] = (error_type, start, end, output_path)
         else:
