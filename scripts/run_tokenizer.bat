@@ -1,3 +1,3 @@
 @echo off
-cd ../
+cd ../../
 python -m korean_spell_checker.scripts.quick_tokenizer

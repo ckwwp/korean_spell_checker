@@ -1,4 +1,4 @@
 @echo off
-cd ../
+cd ../../
 python -m korean_spell_checker.main
 pause
