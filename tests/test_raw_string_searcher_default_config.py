@@ -15,8 +15,9 @@ class Case:
     error_type: SpellErrorType = None
 
 FILE_ERROR_MAPPING = {
-    "spacing.tsv": SpellErrorType.SPACING,
-    "spelling.tsv": SpellErrorType.SPELLING,
+    "spacing.tsv": SpellErrorType.SPACING_RAW,
+    "spelling.tsv": SpellErrorType.SPELLING_RAW,
+    "meaning.tsv": SpellErrorType.MEANING_RAW
 }
 
 def load_cases_from_tsv(file_path: Path) -> list[Case]:

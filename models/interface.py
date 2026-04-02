@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class SpellErrorType(Enum):
     SPELLING_RAW = auto()
     SPACING_RAW = auto()
+    MEANING_RAW = auto()
 
     SPACING = auto()
     MEANING = auto()

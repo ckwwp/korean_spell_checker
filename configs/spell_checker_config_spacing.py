@@ -135,7 +135,7 @@ SPACING_SPECIFIC_ERRORS = [
     .tag_form(Tag.관형사, "한")
     .tag_form(Tag.의존명사, "번")
     .if_not_spaced()
-    .tags(TagGroup.조사)
+    .AND(tags(TagGroup.조사), NOT(form("은")))
     .if_not_spaced()
     .msg("'한 번'으로 띄어 써야 합니다.")
     .build(),
@@ -423,6 +423,13 @@ SPACING_SPECIFIC_ERRORS = [
     .tag_form(Tag.동사, "하")
     .if_spaced()
     .msg("'안절부절못하다'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .form("데")
+    .if_not_spaced()
+    .tag_form(Tag.부사격조사, "에")
+    .msg("'데'를 띄어 써야 합니다.")
     .build(),
 ]
 

@@ -5,8 +5,6 @@ def rule() -> RuleBuilder:
     return RuleBuilder(SpellErrorType.SPELLING)
 
 _CERTAINS: list[KoSpellRules] = [
-    
-
     *rule()
     .AND(any_batchim(), NOT(tag(Tag.닫는부호)))
     .tag_form(Tag.긍정지정사, "이")
@@ -359,6 +357,29 @@ _REP = [
     .tag_form(Tag.동사, "뒤쳐지")
     .msg("'뒤처지다'가 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.형용사규칙활용, "길다랗")
+    .msg("'기다랗다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "옛")
+    .tag_form(Tag.형용사파생접미사규칙활용, "스럽")
+    .msg("'예스럽다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "머리")
+    .tag_form(Tag.일반명사, "속")
+    .msg("'머릿속'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "뼈")
+    .tag_form(Tag.일반명사, "속")
+    .msg("'뼛속'이 올바른 표현입니다.")
+    .build(),
 ]
 
 _MIF = [
@@ -545,6 +566,25 @@ _MIF = [
     .tag_form(Tag.동사, "꺼매지")
     .msg("'까맣게 되다'는 '거메지다/까매지다'입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "쓰")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "있")
+    .msg("'쓰여 있다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "죄")
+    .tag_form(Tag.일반명사, "값")
+    .if_not_spaced()
+    .msg("'죗값'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "홧병")
+    .msg("'화병'이 올바른 표현입니다.")
+    .build(),
 ]
 
 _SHIFT_MISS = [
@@ -602,6 +642,17 @@ _NEED_ML_JUDGE = [
     .tag(Tag.긍정지정사)
     .tag_form(Tag.종결어미, "라던가")
     .msg("나열할 때는 '라든가'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .form("아니")
+    .form("오")
+    .msg("존대의 의미라면 '아니요'입니다. '아니오'는 하게체의 말투입니다. ('아니라오' 같은 것)")
+    .build(),
+    
+    *rule()
+    .form("회수")
+    .msg("'횟수(回数)'의 오타가 아닌가요?")
     .build(),
 ]
 
