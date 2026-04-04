@@ -158,6 +158,11 @@ class SpellChecker:
         self._is_frozen = True
         if not self._root._all_transitions:
             raise ValueError("You must have at least one rule to check spelling.")
+        
+        if tokens:
+            last = tokens[-1]
+            tokens = [*tokens, KoToken(form="__EOF__", tag="__EOF__", start=last.end, end=last.end, len=0)]
+        
         return self._check_impl(tokens)
     
     def _check_impl(self, tokens: list[KoToken]) -> Iterator[SpellError]:
@@ -174,6 +179,8 @@ class SpellChecker:
         active_cursors: dict[_RuleNode, int] = {}
         next_cursors: dict[_RuleNode, int] = {}
         expanded_cursors: dict[_RuleNode, int] = {}
+        
+        candidates = []
         
         for i, token in enumerate(tokens):
             has_space = (token.start - tokens[i-1].end > 0) if i > 0 else False
@@ -206,7 +213,8 @@ class SpellChecker:
                         node.output_path
                     )
             
-                candidates = []
+                candidates.clear()
+                
                 form_tag_dict = node.form_and_tag_transitions.get(token.form)
                 if form_tag_dict is not None:
                     if ft := form_tag_dict.get(token.tag):
