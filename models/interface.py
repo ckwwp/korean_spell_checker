@@ -190,3 +190,11 @@ class KoToken(Protocol):
     start: int
     end: int
     len: int
+    
+@dataclass(frozen=True, slots=True)
+class EOFToken:
+    form: str = "__EOF__"
+    tag: str = "__EOF__"
+    start: int = 0
+    end: int = 0
+    len: int = 0

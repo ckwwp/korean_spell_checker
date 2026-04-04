@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from collections import deque
 from typing import Iterator
 
-from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType
+from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType, EOFToken
 from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition
 from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules
 
@@ -161,7 +161,7 @@ class SpellChecker:
         
         if tokens:
             last = tokens[-1]
-            tokens = [*tokens, KoToken(form="__EOF__", tag="__EOF__", start=last.end, end=last.end, len=0)]
+            tokens = [*tokens, EOFToken(start=last.end, end=last.end)]
         
         return self._check_impl(tokens)
     
