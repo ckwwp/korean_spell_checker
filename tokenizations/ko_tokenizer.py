@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from pathlib import Path
 
 from kiwipiepy import Kiwi
 
@@ -7,8 +8,8 @@ from korean_spell_checker.models.interface import Tag
 
 class KoTokenizer(Kiwi):
     _instance = None
-    DEFAULT_DICTIONARY_PATH = "korean_spell_checker/dictionary"
-    DEFAULT_TERMBASE_PATH = "termbase"
+    DEFAULT_DICTIONARY_PATH = Path(__file__).parent.parent / "dictionary"
+    DEFAULT_TERMBASE_PATH = Path(__file__).parent.parent.parent / "termbase"
 
     def __new__(cls):
         if cls._instance is None:
@@ -49,6 +50,12 @@ class KoTokenizer(Kiwi):
     def debug(self, value: bool):
         print(f"[KoTokenizer] Debug mode switched to {value}")
         self._debug = value
+
+    @classmethod
+    def reset(cls):
+        """싱글톤 인스턴스를 초기화하고 새로 생성하는 함수."""
+        cls._instance = None
+        return cls()
 
     @contextmanager
     def debug_mode(self):

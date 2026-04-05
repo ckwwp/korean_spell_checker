@@ -6,11 +6,13 @@ class SpellErrorType(Enum):
     SPELLING_RAW = auto()
     SPACING_RAW = auto()
     MEANING_RAW = auto()
+    LOANWORD_RAW = auto()
 
     SPACING = auto()
     MEANING = auto()
     SPELLING = auto()
     SPECIFIC = auto()
+    LOANWORD = auto()
 
     WARNING = auto()
     NEED_ML_JUDGE = auto()
@@ -106,6 +108,7 @@ class Tag(StrEnum):
     사용자정의태그2 = 'USER2'
     사용자정의태그3 = 'USER3'
     사용자정의태그4 = 'USER4'
+    끝 = '__EOF__'
     
 class TagGroup:
     체언 = {Tag.일반명사,

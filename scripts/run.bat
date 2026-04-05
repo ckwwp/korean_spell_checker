@@ -1,4 +1,2 @@
 @echo off
-cd ../../
-python -m korean_spell_checker.main
-pause
+start "" pythonw quick_launcher.pyw

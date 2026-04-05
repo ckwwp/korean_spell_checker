@@ -21,10 +21,10 @@ def make_termbase_list(termbase_file_name: Path, col_names: list[str] = None) ->
 
 def get_all_file_paths(folder_name: str, extension: str = None) -> list[Path]:
 	if extension is None:
-		target_path = Path(folder_name).rglob()
+		target_path = Path(folder_name).rglob("*")
 	else:
 		target_path = Path(folder_name).rglob(f"*.{extension}")
-	return [i.absolute() for i in target_path if not i.name.startswith("~$")]
+	return [i.absolute() for i in target_path if i.is_file() and not i.name.startswith("~$")]
 
 def read_excel_file(file_path: str, col_names: list[str] = None, drop_na: bool = False) -> pd.DataFrame:
 	if col_names is None:

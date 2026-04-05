@@ -405,9 +405,13 @@ def create_html_report(data_list, output_filename="report.html"):
                                 Original Text (Detected)
                                 <div class="resizer" data-col="3"></div>
                             </th>
-                            <th onclick="sortTable(4)" style="width: 30%;">
+                            <th onclick="sortTable(4)" style="width: 20%;">
                                 Msg
                                 <div class="resizer" data-col="4"></div>
+                            </th>
+                            <th onclick="sortTable(5)" style="width: 10%;">
+                                Debug Path
+                                <div class="resizer" data-col="5"></div>
                             </th>
                         </tr>
                     </thead>
@@ -419,6 +423,7 @@ def create_html_report(data_list, output_filename="report.html"):
         error_types = escape(str(item.get("error_types", "")))
         msg_text = escape(str(item.get("msg", "")))
         detected_html = str(item.get("text", ""))
+        debug_path_text = escape(str(item.get("debug_path", "")))
 
         html_content += f"""
                         <tr>
@@ -427,6 +432,7 @@ def create_html_report(data_list, output_filename="report.html"):
                             <td class="type-cell">{error_types}</td>
                             <td class="detected-cell">{detected_html}</td>
                             <td class="msg-cell">{msg_text}</td>
+                            <td class="msg-cell">{debug_path_text}</td>
                         </tr>
         """
 
