@@ -122,8 +122,8 @@ class RuleBuilder:
         self.steps.append(_RuleStepData(list(conditions)))
         return self
     
-    def NOT(self, condition: Condition):
-        self.steps.append(_RuleStepData([NotCondition(condition)]))
+    def NOT(self, condition: "Condition | _TagSet | _FormSet"):
+        self.steps.append(_RuleStepData([NotCondition(_resolve_to_condition(condition))]))
         return self
 
     def build(self) -> list[KoSpellRules]:

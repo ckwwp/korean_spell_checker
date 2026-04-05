@@ -241,6 +241,117 @@ _ADD = [
     .tag_form(Tag.종결어미, "네")
     .msg("'누러네'로 써야 합니다.")
     .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "되뇌이")
+    .msg("'되뇌다'가 올바른 표현입니다. (되뇌이다X 되뇌다O 되뇌여서X 되뇌어서O)")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "들이키")
+    .msg("(물 등을) '들이켜다'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "캥기")
+    .msg("'켕기다'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .form("수두룩")
+    .form("빽빽")
+    .msg("'수두룩'이 올바른 표현입니다.('빽빽' 불필요)")
+    .build(),
+
+    *rule()
+    .form("끄덕")
+    .form("없")
+    .msg("'끄떡없다'의 오타가 아닌가요?")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "시뻘개지")
+    .msg("'시뻘게지다'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .form("어리버리")
+    .msg("'어리바리'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "염치")
+    .form("불구")
+    .msg("'염치 불고(不顧)하고'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "꽃히")
+    .msg("'꽂다'의 오기가 아닌지요?")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "열")
+    .tag_form(Tag.동사, "띄")
+    .msg("'열띤'이 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "잊히")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'잊혀지다'는 이중 피동 표현이므로 '잊히다' '잊힌' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "불리우")
+    .msg("'불리우다'는 이중 피동 표현이므로 '불리다' '불렸다(불리었다)' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "쓰이")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'쓰여지다'는 이중 피동 표현이므로 '쓰여 있다', '쓰인' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "적히")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'적혀지다'는 이중 피동 표현이므로 '적히다', '적힌' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "믿기")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'믿겨지다'는 이중 피동 표현이므로 '믿어지다', '믿기다' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "짜이")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'짜여지다'는 이중 피동 표현이므로 '짜이다', '짜인' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "설레이")
+    .msg("'설레이다'는 이중 피동 표현이므로 '설레다', '설렘' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "덮이")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "지")
+    .msg("'덮여지다'는 이중 피동 표현이므로 '덮이다', '덮인' 등으로 쓸 것을 권장합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "씌이")
+    .msg("'씌이다'는 이중 피동 표현이므로 '씌다', '씐' 등으로 쓸 것을 권장합니다.")
+    .build(),
 ]
 
 _REP = [
@@ -380,6 +491,14 @@ _REP = [
     .tag_form(Tag.일반명사, "속")
     .msg("'뼛속'이 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .form("체")
+    .form("안")
+    .form("되")
+    .tags({Tag.연결어미, Tag.선어말어미})
+    .msg("'현저히 모자라다'의 의미로는 '채'가 올바른 표현입니다.")
+    .build(),
 ]
 
 _MIF = [
@@ -418,7 +537,7 @@ _MIF = [
     *rule()
     .tag_form(Tag.동사, "본뜨")
     .OR(OR(tag_form(Tag.연결어미, "어서"), AND(tags({Tag.종결어미, Tag.연결어미}), form("어"))), tag_form(Tag.선어말어미, "었"))
-    .msg("'본떠/본뜬'이 올바른 표현입니다.")
+    .msg("'본떠/본딴'이 올바른 표현입니다.")
     .build(),
 
     *rule()
@@ -556,6 +675,16 @@ _MIF = [
     .tag_form(Tag.일반명사, "넓직")
     .msg("'널찍하다'가 올바른 표현입니다.")
     .build(),
+
+    *rule()
+    .tag_form(Tag.형용사규칙활용, "넓다랗")
+    .msg("'널따랗다'가 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "넓직")
+    .msg("'널찍하다'가 올바른 표현입니다.")
+    .build(),
     
     *rule()
     .tag_form(Tag.동사, "가르키")
@@ -585,6 +714,11 @@ _MIF = [
     .tag_form(Tag.일반명사, "홧병")
     .msg("'화병'이 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "매마르")
+    .msg("'메마르다'의 오타가 아닌가요?")
+    .build(),
 ]
 
 _SHIFT_MISS = [
@@ -598,6 +732,12 @@ _SHIFT_MISS = [
     *rule()
     .tag_form(Tag.선어말어미, "겟")
     .msg("'겠'의 오타가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "하")
+    .tag_form(Tag.선어말어미, "엇")
+    .msg("'했'의 오타가 아닌가요?")
     .build(),
 ]
 
@@ -654,12 +794,17 @@ _NEED_ML_JUDGE = [
     .form("회수")
     .msg("'횟수(回数)'의 오타가 아닌가요?")
     .build(),
+
+    *rule()
+    .tag_form(Tag.고유명사, "캐롤")
+    .msg("'캐럴'로 써야 합니다.")
+    .build(),
 ]
 
 _LOANWORDS = [
     *rule()
-    .tag_form(Tag.고유명사, "캐롤")
-    .msg("'캐럴'로 써야 합니다.")
+    .form("브러쉬")
+    .msg("'브러쉬'가 올바른 표현입니다.")
     .build(),
 ]
 
