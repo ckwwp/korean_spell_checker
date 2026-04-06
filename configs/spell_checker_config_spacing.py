@@ -3,26 +3,12 @@ from korean_spell_checker.models.interface import Tag, TagGroup, SpellErrorType
 
 NUMBER_DETERMINERS = {"첫", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열", "백", "천", "만", "억"}
 MONEY_DETERMINERS = {"골드", "엔", "원", "다이아"}
-되다_EXCEPTIONS = {"얼마", "말", "기회", "부자", "배", "숙부", "여행", "형", "언니", "누나", "엄마", "아빠", "삼촌", "이모", "고모", "남편", "아내", "이튿날", "정도", "축제", "여정", "시간", "때", "돈", "습관", "상태", "말동무", "후반부"}
+되다_EXCEPTIONS = {"얼마", "말", "기회", "부자", "배", "숙부", "여행", "형", "언니", "누나", "엄마", "아빠", "삼촌", "이모", "고모", "남편", "아내", "이튿날", "정도", "축제", "여정", "시간", "때", "돈", "습관", "파뿌리", "상태", "말동무", "후반부"}
 
 def rule() -> RuleBuilder:
     return RuleBuilder(SpellErrorType.SPACING)
 
-GENERAL_SPACING_ERRORS: list[KoSpellRules] = [
-    *rule()
-    .tag(Tag.관형사형전성어미)
-    .AND(tag(Tag.의존명사), NOT(forms({"것", "데", "뿐"})))
-    .if_not_spaced()
-    .msg("명사 앞은 띄어 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag(Tag.관형사형전성어미)
-    .forms({"터"})
-    .if_not_spaced()
-    .msg("명사 앞은 띄어 써야 합니다.")
-    .build(),
-    
+GENERAL_SPACING_ERRORS: list[KoSpellRules] = [    
     *rule()
     .tags({Tag.일반명사, Tag.고유명사, Tag.의존명사})
     .tag(Tag.보조사)
@@ -62,7 +48,7 @@ GENERAL_SPACING_ERRORS: list[KoSpellRules] = [
     .build(),
 
     *rule()
-    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사}))
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사}))
     .tag(Tag.일반명사)
     .tag_form(Tag.동사파생접미사, "하")
     .if_spaced()
@@ -218,13 +204,6 @@ _SPACING_ERRORS = [
     .if_spaced()
     .msg("'지'를 붙여 써야 합니다.")
     .build(),
-
-    *rule()
-    .tag(Tag.관형사형전성어미)
-    .tag_form(Tag.의존명사, "대로")
-    .if_not_spaced()
-    .msg("'대로'를 띄어 써야 합니다.")
-    .build(),
     
     *rule()
     .tag(Tag.관형사형전성어미)
@@ -275,20 +254,6 @@ _SPACING_ERRORS = [
     .tag_form(Tag.일반명사, "순")
     .if_spaced()
     .msg("순서를 나타낼 경우 '날짜순으로'와 같이 붙여 써야 합니다.")
-    .build(),
-
-    # *rule()
-    # .tag(Tag.일반명사)
-    # .tag(Tag.의존명사)
-    # .if_not_spaced()
-    # .msg("의존명사 앞은 띄어 써야 합니다.")
-    # .build(),
-
-    *rule()
-    .tag(Tag.관형사형전성어미)
-    .tag_form(Tag.의존명사, "분")
-    .if_not_spaced()
-    .msg("'분'을 띄어 써야 합니다.")
     .build(),
 
     *rule()
@@ -613,13 +578,6 @@ _NNB = [
     .build(),
     
     *rule()
-    .tag(Tag.관형사형전성어미)
-    .tag_form(Tag.의존명사, "것")
-    .if_not_spaced()
-    .msg("'것'을 앞 말과 띄어 써야 합니다.")
-    .build(),    
-    
-    *rule()
     .AND(tag(Tag.관형사), forms({"여러", "두", "세"}))
     .tag_form(Tag.의존명사, "번")
     .if_not_spaced()
@@ -655,6 +613,13 @@ _NNB = [
     .build(),
     
     *rule()
+    .tag_form(Tag.관형사, "어느")
+    .forms({"새", "덧"})
+    .if_spaced()
+    .msg("'{form[0]}{form[1]}'{으로,로} 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
     .tag_form(Tag.일반부사, "더")
     .tag_form(Tag.일반명사, "이상")
     .if_not_spaced()
@@ -675,6 +640,167 @@ _NNB = [
     .AND(tag(Tag.동사), NOT(form("되")))
     .if_not_spaced()
     .msg("'안'과 동사를 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.의존명사, "수")
+    .tag_form(Tag.형용사, "있")
+    .if_not_spaced()
+    .msg("'있다'를 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.관형사형전성어미)
+    .tag_form(Tag.의존명사, "수")
+    .OR(tag_form(Tag.일반부사, "없이"), tag_form(Tag.형용사, "없"))
+    .if_not_spaced()
+    .msg("'없다'를 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.일반명사, Tag.고유명사, Tag.대명사, Tag.명사파생접미사})
+    .tag_form(Tag.의존명사, "때문")
+    .if_not_spaced()
+    .msg("'때문'은 의존명사이므로, 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.숫자)
+    .tag_form(Tag.명사파생접미사, "여")
+    .AND(tag(Tag.의존명사), forms({"개", "개국", "명", "곳", "초", "분", "시간", "일", "주", "개월", "년", "군데", "차례"}))
+    .if_not_spaced()
+    .msg("'개'는 의존명사이므로, 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.일반명사, Tag.고유명사, Tag.대명사, Tag.명사파생접미사})
+    .tag_form(Tag.의존명사, "간")
+    .if_not_spaced()
+    .msg("사이를 나타내는 '간'을 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.관형사형전성어미, Tag.관형사, Tag.관형격조사})
+    .AND(tag(Tag.의존명사), forms({"것"}))
+    .if_not_spaced()
+    .NOT(tag_form(Tag.주격조사, "이"))
+    .msg("'것'을 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.관형사형전성어미, Tag.관형사, Tag.관형격조사})
+    .AND(tag(Tag.의존명사), forms({"채", "만큼", "바", "적", "둥", "듯", "지", "척", "리", "뻔", "만", "터", "줄", "대로", "분", "거", "김"}))
+    .if_not_spaced()
+    .msg("'{form}'{을,를} 앞 말과 띄어 써야 합니다.")
+    .build(),
+]
+
+_NNG = [
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"글자", "소지"}))
+    .tag_form(Tag.일반명사, "수")
+    .if_not_spaced()
+    .msg("수량을 나타내는 '수'는 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"인원", "상당", "과반", "번지"}))
+    .tag_form(Tag.일반명사, "수")
+    .if_spaced()
+    .msg("'수'를 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.고유명사)
+    .tag_form(Tag.일반명사, "경")
+    .if_not_spaced()
+    .msg("작위를 나타내는 '경(卿)'은 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.관형사형전성어미)
+    .tag_form(Tag.일반명사, "자리")
+    .if_not_spaced()
+    .msg("'자리'를 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.일반명사, Tag.대명사, Tag.관형격조사, Tag.고유명사})
+    .AND(tag(Tag.일반명사), forms({"편", "정도", "말"}))
+    .if_not_spaced()
+    .msg("'{form}'{을,를} 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "짓")
+    .if_not_spaced()
+    .msg("'짓'을 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "그")
+    .tag_form(Tag.일반명사, "밖")
+    .if_not_spaced()
+    .tag_form(Tag.부사격조사, "에")
+    .tag_form(Tag.보조사, "도")
+    .msg("'그 밖'으로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
+    .tag_form(Tag.의존명사, "놈")
+    .if_spaced()
+    .msg("{form[0]}{form[1]}으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.대명사, "너")
+    .tag_form(Tag.관형격조사, "의")
+    .tag_form(Tag.의존명사, "놈")
+    .if_spaced()
+    .msg("'네놈'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
+    .AND(tag(Tag.의존명사), forms({"따위"}))
+    .if_spaced()
+    .msg("'{form[0]} {form[1]}'{으로,로} 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
+    .AND(tag(Tag.의존명사), form("녀석"))
+    .if_not_spaced()
+    .msg("'{form[0]} 녀석'으로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
+    .AND(tag(Tag.일반명사), forms({"곳"}))
+    .if_spaced()
+    .msg("'{form[0]} {form[1]}'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
+    .AND(tag(Tag.일반명사), forms({"자식", "사람"}))
+    .if_not_spaced()
+    .msg("'{form[0]} {form[1]}'으로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "그")
+    .AND(tag(Tag.일반명사), forms({"후", "자체", "틈"}))
+    .if_not_spaced()
+    .msg("'{form[0]} {form[1]}'{으로,로} 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "이")
+    .AND(tag(Tag.일반명사), forms({"틈"}))
+    .if_not_spaced()
+    .msg("'{form[0]} {form[1]}'{으로,로} 띄어 써야 합니다.")
     .build(),
 ]
 
@@ -745,7 +871,8 @@ _VV = [
     .build(),
     
     *rule()
-    .forms({"축복", "축하"})
+    .NOT(tag(Tag.관형사형전성어미))
+    .forms({"축복", "축하", "평가"})
     .tag_form(Tag.동사불규칙활용, "받")
     .if_spaced()
     .msg("'받다'를 붙여 써야 합니다.")
@@ -757,6 +884,21 @@ _VV = [
     .if_not_spaced()
     .msg("'야심 차다'로 띄어 써야 합니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "뒤따르")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "오")
+    .if_spaced()
+    .msg("'뒤따라오다'는 한 단어이므로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag(Tag.일반명사)
+    .tag_form(Tag.동사, "말")
+    .if_not_spaced()
+    .msg("'말다'를 앞 말과 띄어 써야 합니다.")
+    .build(),
 ]
 
 _VX = [
@@ -767,6 +909,14 @@ _VX = [
     .tag_form(Tag.보조용언, "하")
     .if_not_spaced()
     .msg("'~고 싶어 하다'로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.명사형전성어미, "기")
+    .AND(tag(Tag.보조사), forms({"ㄴ", "는"}))
+    .tag_form(Tag.보조용언, "하")
+    .if_not_spaced()
+    .msg("'기는/긴 하다'로 띄어 써야 합니다.")
     .build(),
 ]
 
@@ -854,6 +1004,13 @@ _JX = [
     .form("로")
     .msg("'~이야말로'로 붙여 써야 합니다.")
     .build(),
+    
+    *rule()
+    .tag(Tag.관형사형전성어미)
+    .tag_form(Tag.일반명사, "때")
+    .if_not_spaced()
+    .msg("'때'를 앞 말과 띄어 써야 합니다.")
+    .build(),
 ]
 
 _JKB = [
@@ -861,6 +1018,13 @@ _JKB = [
     .tag_form(Tag.부사격조사, "처럼")
     .if_spaced()
     .msg("'처럼'을 앞 말에 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.명사형전성어미, Tag.대명사, Tag.일반명사, Tag.고유명사, Tag.명사파생접미사})
+    .tag_form(Tag.부사격조사, "보다")
+    .if_spaced()
+    .msg("비교의 의미인 '보다'는 앞 말에 붙여 써야 합니다.")
     .build(),
 ]
 
@@ -948,6 +1112,7 @@ _XSN = [
     *rule()
     .tag_form(Tag.일반명사, "며칠")
     .tag_form(Tag.명사파생접미사, "째")
+    .if_spaced()
     .msg("'며칠째'로 붙여 써야 합니다.")
     .build(),
 ]
@@ -988,6 +1153,7 @@ _NEED_ML_JUDGE = [
 SPACING_ERRORS = [
     *_SPACING_ERRORS,
     *_NNB,
+    *_NNG,
     *_VV,
     *_VX,
     *_VA,

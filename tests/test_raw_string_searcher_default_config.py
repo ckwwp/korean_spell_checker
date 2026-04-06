@@ -12,7 +12,7 @@ from korean_spell_checker.models.interface import SpellErrorType
 class Case:
     text: str
     expect_error: bool = True
-    error_type: SpellErrorType = None
+    error_type: SpellErrorType | None = None
 
 FILE_ERROR_MAPPING = {
     "spacing.tsv": SpellErrorType.SPACING_RAW,

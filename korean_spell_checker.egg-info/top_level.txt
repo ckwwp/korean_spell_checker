@@ -1,8 +1,0 @@
-configs
-dictionary
-engines
-models
-reporters
-scripts
-tokenizations
-utils
