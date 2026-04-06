@@ -120,6 +120,7 @@ _SPACING_ERRORS = [
     .build(),
 
     *rule()
+    .NOT(form("다시"))
     .tag_form(Tag.관형사, "한")
     .tag_form(Tag.의존명사, "번")
     .if_not_spaced()
@@ -551,7 +552,7 @@ _SPACING_ERRORS = [
     .tag_form(Tag.의존명사, "척")
     .AND(tags({Tag.동사파생접미사, Tag.동사}), form("하"))
     .if_spaced()
-    .msg("'체하다'로 붙여 써야 합니다.")
+    .msg("척하다'로 붙여 써야 합니다.")
     .build(),
     
     *rule()
@@ -689,7 +690,14 @@ _NNB = [
     
     *rule()
     .tags({Tag.관형사형전성어미, Tag.관형사, Tag.관형격조사})
-    .AND(tag(Tag.의존명사), forms({"채", "만큼", "바", "적", "둥", "듯", "지", "척", "리", "뻔", "만", "터", "줄", "대로", "분", "거", "김"}))
+    .AND(tag(Tag.의존명사), forms({"채", "만큼", "바", "적", "둥", "듯", "지", "척", "리", "뻔", "만", "터", "줄", "대로", "거", "김", "등"}))
+    .if_not_spaced()
+    .msg("'{form}'{을,를} 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tags({Tag.관형사형전성어미})
+    .AND(tag(Tag.의존명사), forms({"분"}))
     .if_not_spaced()
     .msg("'{form}'{을,를} 앞 말과 띄어 써야 합니다.")
     .build(),
@@ -739,18 +747,18 @@ _NNG = [
     
     *rule()
     .tag_form(Tag.관형사, "그")
+    .tag_form(Tag.의존명사, "중")
+    .if_spaced()
+    .msg("'그 가운데서'의 의미인 경우, '그중'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "그")
     .tag_form(Tag.일반명사, "밖")
     .if_not_spaced()
     .tag_form(Tag.부사격조사, "에")
     .tag_form(Tag.보조사, "도")
     .msg("'그 밖'으로 띄어 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
-    .tag_form(Tag.의존명사, "놈")
-    .if_spaced()
-    .msg("{form[0]}{form[1]}으로 붙여 써야 합니다.")
     .build(),
     
     *rule()
@@ -763,7 +771,7 @@ _NNG = [
     
     *rule()
     .AND(tag(Tag.관형사), forms({"이", "그", "저"}))
-    .AND(tag(Tag.의존명사), forms({"따위"}))
+    .AND(tag(Tag.의존명사), forms({"따위", "놈", "분"}))
     .if_spaced()
     .msg("'{form[0]} {form[1]}'{으로,로} 붙여 써야 합니다.")
     .build(),
@@ -872,7 +880,7 @@ _VV = [
     
     *rule()
     .NOT(tag(Tag.관형사형전성어미))
-    .forms({"축복", "축하", "평가"})
+    .forms({"축복", "축하", "평가", "주목"})
     .tag_form(Tag.동사불규칙활용, "받")
     .if_spaced()
     .msg("'받다'를 붙여 써야 합니다.")
@@ -898,6 +906,36 @@ _VV = [
     .tag_form(Tag.동사, "말")
     .if_not_spaced()
     .msg("'말다'를 앞 말과 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "보잘것")
+    .tag_form(Tag.형용사, "없")
+    .if_spaced()
+    .msg("'보잘것없다'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "알")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.보조용언, "보")
+    .if_spaced()
+    .msg("'알아보다'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사불규칙활용, "잡")
+    .tag_form(Tag.연결어미, "어")
+    .tag_form(Tag.동사, "당기")
+    .if_spaced()
+    .msg("'잡아당기다'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "눈독")
+    .tag_form(Tag.동사, "들이")
+    .if_not_spaced()
+    .msg("'눈독 들이다'로 띄어 써야 합니다.")
     .build(),
 ]
 
@@ -1060,14 +1098,6 @@ _EC = [
     .build(),
     
     *rule()
-    .tag_form(Tag.보조사, "야")
-    .tag_form(Tag.일반명사, "말")
-    .if_spaced()
-    .tag_form(Tag.부사격조사, "로")
-    .msg("강조의 의미인 경우, '~야말로'로 붙여 써야 합니다. (예: 나야말로 왕좌에 걸맞은 사람이다.)")
-    .build(),
-    
-    *rule()
     .tag_form(Tag.의존명사, "거")
     .tag(Tag.긍정지정사)
     .if_spaced()
@@ -1092,7 +1122,7 @@ _EC = [
 
 _ETM = [
     *rule()
-    .AND(tags({Tag.일반명사, Tag.고유명사, Tag.명사파생접미사, Tag.대명사}), NOT(forms({"한결", "굴뚝", "주옥", "감쪽", "쏜살", "악착", "벼락", "철벽", "철통", "찰떡", "불꽃", "목석", "실낱", "뚱딴지"})))
+    .AND(tags({Tag.일반명사, Tag.고유명사, Tag.명사파생접미사, Tag.대명사}), NOT(forms({"꿈", "한결", "굴뚝", "주옥", "감쪽", "쏜살", "악착", "벼락", "철벽", "철통", "찰떡", "불꽃", "목석", "실낱", "뚱딴지", "실날"})))
     .tag_form(Tag.형용사, "같")
     .if_not_spaced()
     .msg("'같다'를 앞 말과 띄어 써야 합니다.")
