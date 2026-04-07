@@ -187,12 +187,14 @@ class KoToken(Protocol):
         start (int): 형태소가 등장하는 위치.
         end (int): 형태소가 끝나는 위치.
         len (int): 형태소의 길이.
+        lemma (str): 형태소의 사전 표제형.
     """
     form: str
     tag: str
     start: int
     end: int
     len: int
+    lemma: str
     
 @dataclass(frozen=True, slots=True)
 class EOFToken:
@@ -201,3 +203,4 @@ class EOFToken:
     start: int = 0
     end: int = 0
     len: int = 0
+    lemma: str = "__EOF__"

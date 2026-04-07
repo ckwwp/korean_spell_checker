@@ -48,7 +48,14 @@ class TagAndFormCondition(Condition):
     
     def match(self, token: KoToken) -> bool:
         return token.form == self.form and token.tag == self.tag
-    
+
+@dataclass(frozen=True, slots=True)
+class LemmaCondition(Condition):
+    lemma: str
+
+    def match(self, token: KoToken) -> bool:
+        return token.lemma == self.lemma
+
 @dataclass(frozen=True, slots=True)
 class AnyCondition(Condition):
     def match(self, token: KoToken) -> bool:

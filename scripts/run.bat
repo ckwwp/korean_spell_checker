@@ -1,2 +1,4 @@
 @echo off
-start "" pythonw quick_launcher.pyw
+cd ../
+call venv\scripts\activate
+start "" venv\Scripts\python.exe scripts\quick_launcher.pyw

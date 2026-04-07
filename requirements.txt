@@ -6,7 +6,6 @@ et_xmlfile==2.0.0
 iniconfig==2.3.0
 kiwipiepy==0.23.1
 kiwipiepy_model==0.23.0
--e git+https://github.com/ink-14/korean_spell_checker.git@27ee24a1b380605535c99cc5628f3fad0a6d66de#egg=korean_spell_checker
 loguru==0.7.3
 numpy==2.4.4
 openpyxl==3.1.5

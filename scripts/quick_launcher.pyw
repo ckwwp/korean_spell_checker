@@ -3,8 +3,14 @@ import os
 import sys
 import threading
 
-# 더블클릭 실행 시 venv 및 프로젝트 루트 경로 고정
-_project = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w')
+
+# __file__ 절대경로 보장
+_script = os.path.abspath(__file__)
+_project = os.path.normpath(os.path.join(os.path.dirname(_script), ".."))
 _parent = os.path.dirname(_project)
 _venv_site = os.path.join(_project, "venv", "Lib", "site-packages")
 os.chdir(_project)
@@ -321,6 +327,14 @@ function runSpellCheck() {
   });
 }
 
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function renderSpellResult(result) {
   document.getElementById('spell-preview').innerHTML = result.highlighted;
 
@@ -332,7 +346,7 @@ function renderSpellResult(result) {
   const th = '<tr><th>#</th><th>Type</th><th>Message</th></tr>';
   const tbody = result.errors.map((e, i) => {
     const path = e.debug_path
-      ? '<div class="err-path">' + e.debug_path + '</div>' : '';
+      ? '<div class="err-path">' + escapeHtml(e.debug_path) + '</div>' : '';
     return '<tr>'
       + '<td>' + (i + 1) + '</td>'
       + '<td class="err-type">' + e.type + '</td>'
@@ -469,12 +483,15 @@ if __name__ == "__main__":
     api = Api()
 
     def init_all():
-        print("■ 초기화 중…")
-        api._tkn = KoTokenizer()
-        api._tkn.tokenize("")  # 워밍업
-        api._build_spell_checkers()
-        api._ready = True
-        print("■ 초기화 완료!")
+      try:
+          api._tkn = KoTokenizer()
+          api._tkn.tokenize("")
+          api._build_spell_checkers()
+          api._ready = True
+      except Exception as e:
+          with open(os.path.join(_project, "launcher_error.log"), "w", encoding="utf-8") as f:
+              import traceback
+              f.write(traceback.format_exc())
 
     t = threading.Thread(target=init_all, daemon=True)
     t.start()
