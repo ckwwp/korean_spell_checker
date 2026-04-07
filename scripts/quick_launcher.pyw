@@ -1,5 +1,8 @@
+import gzip
 import importlib
 import os
+import pickle
+import re
 import sys
 import threading
 
@@ -183,6 +186,55 @@ HTML = """
   .err-type { font-weight: bold; color: #e55a5a; white-space: nowrap; }
   .err-path { font-size: 11px; color: #999; margin-top: 2px; font-family: monospace; }
   .no-errors { color: #22a355; font-size: 13px; margin-top: 8px; }
+
+  /* ── 사전 검색 ── */
+  .dict-sticky-search {
+    position: sticky;
+    top: 40px;
+    background: #f5f5f5;
+    margin: 0 -16px;
+    padding: 0 16px 8px;
+    z-index: 50;
+  }
+  .dict-search-row {
+    display: flex; gap: 8px;
+  }
+  .dict-regex-label {
+    margin-top: 6px; font-size: 13px; color: #555;
+  }
+  .dict-input {
+    flex: 1; padding: 6px 10px; border: 1px solid #ccc;
+    border-radius: 4px; font-size: 14px; font-family: inherit;
+  }
+  .dict-input:focus { outline: none; border-color: #4a7fe5; box-shadow: 0 0 0 2px rgba(74,127,229,0.2); }
+  .dict-card {
+    background: white; border: 1px solid #ddd; border-radius: 6px;
+    margin-top: 10px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .dict-card-header {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 8px 12px; background: #f0f5ff; border-bottom: 1px solid #ddd;
+  }
+  .dict-word { font-size: 16px; font-weight: bold; color: #222; }
+  .dict-pos-badge {
+    font-size: 11px; padding: 2px 7px; border-radius: 10px;
+    background: #4a7fe5; color: white; white-space: nowrap;
+  }
+  .dict-card-body { padding: 10px 14px; }
+  .dict-sense {
+    margin-bottom: 10px; padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .dict-sense:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .dict-sense-num { font-size: 12px; color: #999; margin-right: 4px; }
+  .dict-definition { font-size: 13px; color: #333; line-height: 1.6; }
+  .dict-examples { margin-top: 5px; padding-left: 12px; }
+  .dict-example { font-size: 12px; color: #666; line-height: 1.6; }
+  .dict-example::before { content: '• '; color: #aaa; }
+  .dict-source { font-size: 11px; color: #aaa; font-style: italic; margin-left: 4px; }
+  .dict-no-result { color: #888; font-size: 13px; margin-top: 12px; }
+  .dict-not-loaded { color: #e55a5a; font-size: 13px; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -190,6 +242,7 @@ HTML = """
 <div class="tab-header">
   <button class="tab-btn active" onclick="switchTab('tokenizer')">토크나이저</button>
   <button class="tab-btn"        onclick="switchTab('spell')">맞춤법 검사</button>
+  <button class="tab-btn"        onclick="switchTab('dict')">사전 검색</button>
 </div>
 
 <!-- ════ 토크나이저 탭 ════ -->
@@ -216,6 +269,23 @@ HTML = """
   </div>
   <div id="spell-preview" class="spell-preview"></div>
   <div id="spell-errors"></div>
+</div>
+
+<!-- ════ 사전 검색 탭 ════ -->
+<div id="pane-dict" class="tab-pane">
+  <h2>사전 검색</h2>
+  <div class="dict-sticky-search">
+    <div class="dict-search-row">
+      <input id="dict-input" type="text" class="dict-input"
+             placeholder="검색어를 입력하세요 (부분 일치 지원)">
+      <button class="btn-primary" onclick="dictSearch()">검색</button>
+    </div>
+    <label class="dict-regex-label">
+      <input type="checkbox" id="dict-regex"> 정규식 (Regex)
+    </label>
+  </div>
+  <div class="status" id="dict-status"></div>
+  <div id="dict-results"></div>
 </div>
 
 <script>
@@ -357,6 +427,78 @@ function renderSpellResult(result) {
     '<table class="error-table"><thead>' + th + '</thead><tbody>' + tbody + '</tbody></table>';
 }
 
+/* ════ 사전 검색 ════ */
+document.getElementById('dict-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') dictSearch();
+});
+
+document.getElementById('dict-regex').addEventListener('change', function() {
+  const input = document.getElementById('dict-input');
+  input.placeholder = this.checked
+    ? '정규표현식을 입력하세요 (예: ^가나.*다$)'
+    : '검색어를 입력하세요 (부분 일치 지원)';
+});
+
+function dictSearch() {
+  const query = document.getElementById('dict-input').value.trim();
+  if (!query) return;
+  const useRegex = document.getElementById('dict-regex').checked;
+  document.getElementById('dict-status').textContent = '검색 중…';
+  document.getElementById('dict-results').innerHTML = '';
+
+  pywebview.api.dict_search(query, useRegex).then(result => {
+    if (result.error) {
+      document.getElementById('dict-status').textContent = '';
+      document.getElementById('dict-results').innerHTML =
+        '<div class="dict-not-loaded">' + escapeHtml(result.error) + '</div>';
+      return;
+    }
+    const items = result.items;
+    document.getElementById('dict-status').textContent =
+      items.length ? items.length + '건 (최대 100건)' : '';
+    if (!items.length) {
+      document.getElementById('dict-results').innerHTML =
+        '<div class="dict-no-result">검색 결과가 없습니다.</div>';
+      return;
+    }
+    document.getElementById('dict-results').innerHTML = items.map(renderDictCard).join('');
+  });
+}
+
+function renderDictCard(item) {
+  const posBadges = item.pos_senses
+    .filter(ps => ps.pos)
+    .map(ps => '<span class="dict-pos-badge">' + escapeHtml(ps.pos) + '</span>')
+    .join(' ');
+
+  let sensesHtml = '';
+  item.pos_senses.forEach(ps => {
+    ps.senses.forEach((s, idx) => {
+      const num = ps.senses.length > 1
+        ? '<span class="dict-sense-num">' + (idx + 1) + '.</span>' : '';
+      const examplesHtml = s.examples.map(ex => {
+        const src = ex.source
+          ? ' <span class="dict-source">(' + escapeHtml(ex.source) + ')</span>' : '';
+        return '<div class="dict-example">'
+          + escapeHtml(ex.example) + src + '</div>';
+      }).join('');
+      sensesHtml +=
+        '<div class="dict-sense">'
+        + '<div class="dict-definition">' + num + escapeHtml(s.definition) + '</div>'
+        + (examplesHtml ? '<div class="dict-examples">' + examplesHtml + '</div>' : '')
+        + '</div>';
+    });
+  });
+
+  return '<div class="dict-card">'
+    + '<div class="dict-card-header">'
+    + '<span class="dict-word">' + escapeHtml(item.word) + '</span>'
+    + posBadges
+    + '</div>'
+    + '<div class="dict-card-body">' + (sensesHtml || '') + '</div>'
+    + '</div>';
+}
+
 function rebuildSpellRules() {
   setSpellLoading(true);
   setSpellStatus('규칙 재빌드 중… (잠시 기다려 주세요)');
@@ -375,12 +517,17 @@ function rebuildSpellRules() {
 """
 
 
+_dict_pkl = os.path.join(_project, "dictionary", "dict.pkl")
+
+
 class Api:
     def __init__(self):
         self._tkn: KoTokenizer | None = None
         self._spell: SpellChecker | None = None
         self._raw: RawStringSearcher | None = None
         self._ready = False
+        self._dict_data: list | None = None
+        self._dict_loaded = False
 
     # ── 내부 헬퍼 ──────────────────────────────────────────────
 
@@ -439,6 +586,40 @@ class Api:
         except Exception as e:
             return {"error": str(e)}
 
+    # ── 사전 검색 API ───────────────────────────────────────────
+
+    def _load_dict(self) -> str | None:
+        """pickle 로드 (최초 1회). 오류 메시지 반환, 없으면 None."""
+        if self._dict_loaded:
+            return None
+        self._dict_loaded = True
+        if not os.path.exists(_dict_pkl):
+            return f"사전 파일이 없습니다: {_dict_pkl}\n" \
+                   "build_dict_pickle.py를 실행해 먼저 생성해 주세요."
+        try:
+            with gzip.open(_dict_pkl, 'rb') as f:
+                self._dict_data = pickle.load(f)
+        except Exception as e:
+            self._dict_data = None
+            return f"사전 파일 로드 오류: {e}"
+        return None
+
+    def dict_search(self, query: str, use_regex: bool = False) -> dict:
+        if err := self._load_dict():
+            return {"error": err}
+        if not query or not self._dict_data:
+            return {"items": []}
+        if use_regex:
+            try:
+                pattern = re.compile(query)
+                matched = [e for e in self._dict_data if pattern.search(e['word_plain'])]
+            except re.error as ex:
+                return {"error": f"정규식 오류: {ex}"}
+        else:
+            plain_query = re.sub(r'[-^]', '', query)
+            matched = [e for e in self._dict_data if plain_query in e['word_plain']]
+        return {"items": matched[:100]}
+
     # ── 맞춤법 검사 API ─────────────────────────────────────────
 
     def spell_check(self, text: str) -> dict:
@@ -483,15 +664,15 @@ if __name__ == "__main__":
     api = Api()
 
     def init_all():
-      try:
-          api._tkn = KoTokenizer()
-          api._tkn.tokenize("")
-          api._build_spell_checkers()
-          api._ready = True
-      except Exception as e:
-          with open(os.path.join(_project, "launcher_error.log"), "w", encoding="utf-8") as f:
-              import traceback
-              f.write(traceback.format_exc())
+        try:
+            api._tkn = KoTokenizer()
+            api._tkn.tokenize("")
+            api._build_spell_checkers()
+            api._ready = True
+        except Exception as e:
+            with open(os.path.join(_project, "launcher_error.log"), "w", encoding="utf-8") as f:
+                import traceback
+                f.write(traceback.format_exc())
 
     t = threading.Thread(target=init_all, daemon=True)
     t.start()
