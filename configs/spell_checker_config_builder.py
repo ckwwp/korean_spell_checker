@@ -98,6 +98,10 @@ class RuleBuilder:
         self.steps.append(_RuleStepData([FormCondition(form=f) for f in form_set]))
         return self
     
+    def lemma(self, lemma: str):
+        self.steps.append(_RuleStepData([LemmaCondition(lemma=lemma)]))
+        return self
+
     def batchim(self, b: str):
         self.steps.append(_RuleStepData([BatchimCondition(batchim=b)]))
         return self
@@ -213,6 +217,9 @@ def forms(fs: set[str]) -> _FormSet:
 
 def tag_form(t: str, f: str) -> TagAndFormCondition:
     return TagAndFormCondition(form=f, tag=t)
+
+def lemma(l: str) -> LemmaCondition:
+    return LemmaCondition(lemma=l)
 
 def length(n: int) -> LengthCondition:
     return LengthCondition(length=n)
