@@ -352,6 +352,13 @@ _ADD = [
     .tag_form(Tag.동사, "씌이")
     .msg("'씌이다'는 이중 피동 표현이므로 '씌다', '씐' 등으로 쓸 것을 권장합니다.")
     .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "안주")
+    .tag_form(Tag.의존명사, "거리")
+    .if_not_spaced()
+    .msg("'술과 함께 먹는 먹을거리'의 의미인 경우, '안줏거리'로 써야 합니다.")
+    .build(),
 ]
 
 _REP = [
@@ -398,7 +405,7 @@ _REP = [
     .build(),
 
     *rule()
-    .AND(tags({Tag.종결어미, Tag.연결어미}), form("ㄹ께"))
+    .AND(tags({Tag.종결어미, Tag.연결어미}), forms({"ㄹ께", "ㄹ께요"}))
     .msg("'-ㄹ게'로 써야 합니다.")
     .build(),
 
@@ -724,6 +731,12 @@ _MIF = [
     *rule()
     .tag_form(Tag.동사, "매마르")
     .msg("'메마르다'의 오타가 아닌가요?")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.관형사, "몇")
+    .tag_form(Tag.의존명사, "일")
+    .msg("'며칠'이 올바른 표현입니다.")
     .build(),
 ]
 
