@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from collections import deque
 from typing import Iterator
 
-from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType, EOFToken
-from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition
+from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType
+from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition, NotCondition
 from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules
 
 @dataclass(frozen=True, slots=True)
@@ -159,22 +159,20 @@ class SpellChecker:
         if not self._root._all_transitions:
             raise ValueError("You must have at least one rule to check spelling.")
         
-        if tokens:
-            last = tokens[-1]
-            tokens = [*tokens, EOFToken(start=last.end, end=last.end)]
-        
         return self._check_impl(tokens)
     
     def _check_impl(self, tokens: list[KoToken]) -> Iterator[SpellError]:
         """NFA 시뮬레이션 기반 토큰 검사.
-    
+
         각 토큰마다 아래 4단계를 반복:
         1) root에서 새 커서 시작
         2) optional 전이로 도달 가능한 노드 확장 (epsilon closure)
+           - i==0이면 NOT 전이도 엡실론으로 처리 (BOS epsilon: 문장 시작에서 NOT 조건은 vacuously true)
         3) 출력 가능한 노드에서 에러 수집
         4) 현재 토큰과 매칭되는 전이를 따라 커서 전진
-        
+
         동일 노드에 여러 커서가 도달하면 가장 늦은 시작점만 유지 (최단 매치 우선).
+        루프 종료 후 남은 커서에 대해 optional/NOT 전이를 엡실론으로 확장해 출력 수집 (EOF epsilon).
         """
         active_cursors: dict[_RuleNode, int] = {}
         next_cursors: dict[_RuleNode, int] = {}
@@ -193,14 +191,32 @@ class SpellChecker:
             for node, start_idx in active_cursors.items():
                 if node not in expanded_cursors or start_idx > expanded_cursors[node]:
                     expanded_cursors[node] = start_idx
-                    
+
                 for closure_node in node.get_optional_closure():
                     if closure_node not in expanded_cursors or start_idx > expanded_cursors[closure_node]:
                         expanded_cursors[closure_node] = start_idx
-            
+
+            # ── BOS epsilon: 문장 시작에서 NOT 전이를 엡실론으로 처리 ──
+            # spacing rule이 ANY인 경우에만 적용 (SPACED/ATTACHED는 실제 인접 토큰이 필요)
+            if i == 0:
+                bos_queue = deque(expanded_cursors.items())
+                while bos_queue:
+                    current_node, start_idx = bos_queue.popleft()
+                    for trans in current_node._all_transitions:
+                        if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY:
+                            continue
+                        target = trans.target_node
+                        if target not in expanded_cursors or start_idx > expanded_cursors[target]:
+                            expanded_cursors[target] = start_idx
+                            bos_queue.append((target, start_idx))
+                            for opt_node in target.get_optional_closure():
+                                if opt_node not in expanded_cursors or start_idx > expanded_cursors[opt_node]:
+                                    expanded_cursors[opt_node] = start_idx
+                                    bos_queue.append((opt_node, start_idx))
+
             # ── Phase 2: 출력 수집 & 전이 탐색 ──
             next_cursors.clear()
-            current_step_errors: dict[str, tuple[SpellErrorType, int, int, str]] = {}
+            current_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
 
             for node, start_idx in expanded_cursors.items():
                 if node.output_message and start_idx < i:
@@ -251,21 +267,34 @@ class SpellChecker:
             
             active_cursors, next_cursors = next_cursors, active_cursors
 
-        # 마지막 남은 토큰 처리
+        # ── EOF epsilon: optional/NOT 전이를 엡실론으로 확장해 남은 출력 수집 ──
         if tokens:
-            final_step_errors: dict[str, tuple[SpellErrorType, int, int, str]] = {}
+            final_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
 
-            for node, start_idx in active_cursors.items():
-                for closure_node in node.get_optional_closure():
-                    if closure_node.output_message:
-                        self._update_shortest_match(
-                            storage=final_step_errors,
-                            msg=closure_node.output_message,
-                            error_type=closure_node.error_type,
-                            start=tokens[start_idx].start,
-                            end=tokens[-1].end,
-                            output_path=closure_node.output_path
-                        )
+            final_expanded: dict[_RuleNode, int] = {}
+            eof_queue = deque(active_cursors.items())
+            while eof_queue:
+                node, start_idx = eof_queue.popleft()
+                if node in final_expanded and start_idx <= final_expanded[node]:
+                    continue
+                final_expanded[node] = start_idx
+                for trans in node._all_transitions:
+                    is_not_any = isinstance(trans.condition, NotCondition) and trans.spacing_rule == SpacingRule.ANY
+                    if trans.is_optional or is_not_any:
+                        target = trans.target_node
+                        if target not in final_expanded or start_idx > final_expanded[target]:
+                            eof_queue.append((target, start_idx))
+
+            for node, start_idx in final_expanded.items():
+                if node.output_message:
+                    self._update_shortest_match(
+                        storage=final_step_errors,
+                        msg=node.output_message,
+                        error_type=node.error_type,
+                        start=tokens[start_idx].start,
+                        end=tokens[-1].end,
+                        output_path=node.output_path
+                    )
 
             for msg, (err_type, start, end, output_path) in final_step_errors.items():
                 yield SpellError(
@@ -276,7 +305,7 @@ class SpellChecker:
                     debug_path=output_path
                 )
     
-    def _update_shortest_match(self, storage: dict[str, tuple[SpellErrorType, int, int, str]], msg: str, error_type: SpellErrorType, start: int, end: int, output_path: str) -> None:
+    def _update_shortest_match(self, storage: dict[str, tuple[SpellErrorType, int, int, str | None]], msg: str, error_type: SpellErrorType, start: int, end: int, output_path: str | None) -> None:
         if msg not in storage:
             storage[msg] = (error_type, start, end, output_path)
         else:

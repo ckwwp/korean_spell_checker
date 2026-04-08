@@ -195,12 +195,3 @@ class KoToken(Protocol):
     end: int
     len: int
     lemma: str
-    
-@dataclass(frozen=True, slots=True)
-class EOFToken:
-    form: str = "__EOF__"
-    tag: str = "__EOF__"
-    start: int = 0
-    end: int = 0
-    len: int = 0
-    lemma: str = "__EOF__"

@@ -113,7 +113,7 @@ GENERAL_SPACING_ERRORS: list[KoSpellRules] = [
     *rule()
     .NOT(tag(Tag.숫자))
     .tag_form(Tag.구분부호, ",")
-    .NOT(tags({Tag.숫자, Tag.끝, Tag.닫는부호, Tag.구분부호, Tag.종결부호}))
+    .NOT(tags({Tag.숫자, Tag.닫는부호, Tag.구분부호, Tag.종결부호}))
     .if_not_spaced()
     .msg("쉼표 뒤에 띄어쓰기가 없습니다.")
     .build(),
