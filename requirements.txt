@@ -1,4 +1,6 @@
 bottle==0.13.4
+jamo
+rapidfuzz
 cffi==2.0.0
 clr_loader==0.2.10
 colorama==0.4.6

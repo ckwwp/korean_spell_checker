@@ -17,8 +17,10 @@ _project = os.path.normpath(os.path.join(os.path.dirname(_script), ".."))
 _parent = os.path.dirname(_project)
 _venv_site = os.path.join(_project, "venv", "Lib", "site-packages")
 os.chdir(_project)
+_scripts = os.path.dirname(_script)
 sys.path.insert(0, _parent)
 sys.path.insert(1, _venv_site)
+sys.path.insert(2, _scripts)
 
 import webview
 
@@ -34,6 +36,8 @@ import korean_spell_checker.configs.spell_checker_config_warning as _spell_warni
 import korean_spell_checker.configs.spell_checker_config as _spell_cfg
 import korean_spell_checker.configs.raw_string_searcher_config as _raw_cfg
 from korean_spell_checker.reporters.html_reporter import highlight_text, get_error_type_name
+from bktree import BKTree
+from jamo import h2j
 
 HTML = """
 <!DOCTYPE html>
@@ -235,6 +239,22 @@ HTML = """
   .dict-source { font-size: 11px; color: #aaa; font-style: italic; margin-left: 4px; }
   .dict-no-result { color: #888; font-size: 13px; margin-top: 12px; }
   .dict-not-loaded { color: #e55a5a; font-size: 13px; margin-top: 12px; }
+
+  /* ── 유사어 제안 ── */
+  .dict-suggestion-box {
+    margin-top: 12px; padding: 10px 12px; background: #fffbea;
+    border: 1px solid #f5e04a; border-radius: 6px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .dict-suggestion-label {
+    font-size: 13px; color: #7a6a00; font-weight: bold; white-space: nowrap;
+  }
+  .dict-suggestion-chip {
+    padding: 4px 12px; border: 1px solid #d4b800; border-radius: 14px;
+    background: white; color: #3a2e00; font-size: 13px; cursor: pointer;
+    font-family: inherit; transition: background 0.12s;
+  }
+  .dict-suggestion-chip:hover { background: #fffade; border-color: #b89800; }
 </style>
 </head>
 <body>
@@ -457,8 +477,13 @@ function dictSearch() {
     document.getElementById('dict-status').textContent =
       items.length ? items.length + '건 (최대 100건)' : '';
     if (!items.length) {
-      document.getElementById('dict-results').innerHTML =
-        '<div class="dict-no-result">검색 결과가 없습니다.</div>';
+      const sugg = result.suggestions;
+      if (sugg && sugg.length) {
+        document.getElementById('dict-results').innerHTML = renderSuggestions(sugg);
+      } else {
+        document.getElementById('dict-results').innerHTML =
+          '<div class="dict-no-result">검색 결과가 없습니다.</div>';
+      }
       return;
     }
     document.getElementById('dict-results').innerHTML = items.map(renderDictCard).join('');
@@ -499,6 +524,28 @@ function renderDictCard(item) {
     + '</div>';
 }
 
+let _dictSuggestions = [];
+
+function renderSuggestions(suggestions) {
+  _dictSuggestions = suggestions;
+  const chips = suggestions.map((s, i) =>
+    '<button class="dict-suggestion-chip" onclick="dictSearchFor(' + i + ')">'
+    + escapeHtml(s.word) + '</button>'
+  ).join('');
+  return '<div class="dict-suggestion-box">'
+    + '<span class="dict-suggestion-label">이것을 찾으셨나요?</span>'
+    + chips
+    + '</div>';
+}
+
+function dictSearchFor(idx) {
+  const s = _dictSuggestions[idx];
+  if (!s) return;
+  document.getElementById('dict-input').value = s.word_plain;
+  document.getElementById('dict-regex').checked = false;
+  dictSearch();
+}
+
 function rebuildSpellRules() {
   setSpellLoading(true);
   setSpellStatus('규칙 재빌드 중… (잠시 기다려 주세요)');
@@ -528,6 +575,8 @@ class Api:
         self._ready = False
         self._dict_data: list | None = None
         self._dict_loaded = False
+        self._bktree: BKTree | None = None
+        self._word_index: dict[str, dict] = {}
 
     # ── 내부 헬퍼 ──────────────────────────────────────────────
 
@@ -594,15 +643,52 @@ class Api:
             return None
         self._dict_loaded = True
         if not os.path.exists(_dict_pkl):
-            return f"사전 파일이 없습니다: {_dict_pkl}\n" \
-                   "build_dict_pickle.py를 실행해 먼저 생성해 주세요."
+            return (f"사전 파일이 없습니다: {_dict_pkl}\n"
+                    "build_dict_pickle.py를 실행해 먼저 생성해 주세요.")
         try:
             with gzip.open(_dict_pkl, 'rb') as f:
-                self._dict_data = pickle.load(f)
+                data = pickle.load(f)
+            if isinstance(data, list):
+                # 구버전 포맷 (BK-Tree 없음)
+                self._dict_data = data
+            else:
+                self._dict_data = data['entries']
+                self._bktree = data.get('bktree')
+            for entry in self._dict_data:
+                wp = entry['word_plain']
+                if wp not in self._word_index:
+                    self._word_index[wp] = entry
         except Exception as e:
             self._dict_data = None
             return f"사전 파일 로드 오류: {e}"
         return None
+
+    def _fuzzy_suggest(self, query: str) -> list[dict]:
+        """BK-Tree 로 유사어 최대 5건 반환. 숫자·기호 제거 후 중복 제거."""
+        if not self._bktree:
+            return []
+        jlen = len(h2j(query))
+        threshold = 1 if jlen <= 3 else (2 if jlen <= 7 else 3)
+        candidates = self._bktree.search(query, threshold)
+        seen_raw: set[str] = set()    # BK-Tree 후보 중복 방지
+        seen_clean: set[str] = set()  # 정리 후 표시 단어 중복 방지
+        results: list[dict] = []
+        for _, word in candidates:
+            if word in seen_raw:
+                continue
+            seen_raw.add(word)
+            entry = self._word_index.get(word)
+            if not entry:
+                continue
+            clean_word = re.sub(r'[0-9^\-\s]', '', entry['word'])
+            clean_plain = re.sub(r'[0-9^\-\s]', '', entry['word_plain'])
+            if not clean_plain or clean_plain in seen_clean:
+                continue
+            seen_clean.add(clean_plain)
+            results.append({**entry, 'word': clean_word, 'word_plain': clean_plain})
+            if len(results) >= 5:
+                break
+        return results
 
     def dict_search(self, query: str, use_regex: bool = False) -> dict:
         if err := self._load_dict():
@@ -615,10 +701,13 @@ class Api:
                 matched = [e for e in self._dict_data if pattern.search(e['word_plain'])]
             except re.error as ex:
                 return {"error": f"정규식 오류: {ex}"}
-        else:
-            plain_query = re.sub(r'[-^]', '', query)
-            matched = [e for e in self._dict_data if plain_query in e['word_plain']]
-        return {"items": matched[:100]}
+            return {"items": matched[:100]}
+        plain_query = re.sub(r'[-^]', '', query)
+        matched = [e for e in self._dict_data if plain_query in e['word_plain']]
+        if matched:
+            return {"items": matched[:100]}
+        suggestions = self._fuzzy_suggest(plain_query)
+        return {"items": [], "suggestions": suggestions}
 
     # ── 맞춤법 검사 API ─────────────────────────────────────────
 

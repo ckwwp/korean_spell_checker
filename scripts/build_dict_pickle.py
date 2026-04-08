@@ -15,6 +15,9 @@ import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).parent))
+from bktree import build as build_bktree
+
 
 def strip_symbols(word: str) -> str:
     """'-', '^' 기호를 제거한 순수 단어 반환 (검색용)."""
@@ -116,10 +119,16 @@ def main():
 
     print(f"\n총 {len(all_entries):,}개 항목 파싱 완료.")
 
+    print("BK-Tree 구축 중...")
+    unique_words = list({e['word_plain'] for e in all_entries})
+    bktree = build_bktree(unique_words)
+    print(f"BK-Tree 구축 완료 ({len(unique_words):,}개 단어)")
+
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"entries": all_entries, "bktree": bktree}
     with gzip.open(output, 'wb', compresslevel=6) as f:
-        pickle.dump(all_entries, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     size_mb = output.stat().st_size / (1024 * 1024)
     print(f"저장 완료: {output}  ({size_mb:.1f} MB)")
