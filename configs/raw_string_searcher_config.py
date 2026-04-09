@@ -93,6 +93,7 @@ _SPELL_MISS_LIST: list[tuple[list[str], str]] = [
     (["배멀미"], "'뱃멀미'가 올바른 표현입니다."),
     (["공부벌레", "공부 벌레"], "'공붓벌레'가 올바른 표현입니다."),
     (["막내동생", "막내 동생"], "'막냇동생'이 올바른 표현입니다."),
+    (['기대값'], "'기댓값'이 올바른 표현입니다."),
 
     (["여지껏"], "'여태껏'이 올바른 표현입니다."),
     (["어짜피"], "'어차피'가 올바른 표현입니다."),
@@ -182,12 +183,18 @@ _SPACING_MISS = [
     (["네 잎 클로버", "네잎 클로버"], "'네잎클로버'로 붙여 써야 합니다."),
 ]
 
+_MARKS = [
+    (["?."], "문장 부호가 잘못된 것 같습니다."),
+]
+
 _MEANING_COMPLICT = [
     (["흔자국", "흔 자국"], "'흔(痕)'에 이미 '자국'의 의미가 포함되어 있습니다."),
 ]
 
 _LOANWORDS = [
     (["썬그라스", "썬글라스", "썬글래스", "선글래스"], "'선글라스'가 올바른 표기입니다."),
+    (["퀼리티"], "'퀄리티'가 올바른 표기입니다."),
+    (["어드벤쳐", "어드밴처", "어드밴쳐"], "'어드벤처'가 올바른 표기입니다."),
 ]
 
 _NEED_ML_JUDGE = [
@@ -198,6 +205,7 @@ _NEED_ML_JUDGE = [
 
 RAW_STRING_RULES: tuple[list, SpellErrorType] = [
     (_SPELL_MISS_LIST, SpellErrorType.SPELLING_RAW),
+    (_MARKS, SpellErrorType.SPELLING_RAW),
     (_SPACING_MISS, SpellErrorType.SPACING_RAW),
     (_MEANING_COMPLICT, SpellErrorType.MEANING_RAW),
     (_LOANWORDS, SpellErrorType.LOANWORD_RAW),

@@ -56,9 +56,15 @@ _CERTAINS: list[KoSpellRules] = [
     .build(),
 
     *rule()
-    .OR(batchim("ㄴ"), NOT(any_batchim()))
+    .batchim("ㄴ")
     .tag_form(Tag.명사파생접미사, "률")
-    .msg("ㄴ받침 혹은 받침 없는 명사에는 '율'을 사용해야 합니다.")
+    .msg("ㄴ받침으로 끝나는 명사에는 '율'을 사용해야 합니다.")
+    .build(),
+    
+    *rule()
+    .NOT(any_batchim())
+    .tag_form(Tag.명사파생접미사, "률")
+    .msg("명사에는 '율'을 사용해야 합니다.")
     .build(),
     
     *rule()
@@ -512,9 +518,48 @@ _REP = [
     .tag_form(Tag.형용사, "같")
     .msg("'실낱같다'가 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "짓껄이")
+    .msg("'지껄이다'가 올바른 표현입니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.대명사, "지")
+    .tag_form(Tag.동사, "꺼리")
+    .if_not_spaced()
+    .msg("'지껄이다'의 오타가 아닌가요?")
+    .build(),
 ]
 
+_ㄹ동사들 = {"졸", "썰", "날", "빌", "불", "말", "살", "일", "팔"}
+_ㄹ형용사들 = {"거칠", "달", "녹슬"}
+
 _MIF = [
+    *rule()
+    .AND(tag(Tag.동사), forms(_ㄹ동사들))
+    .tag_form(Tag.선어말어미, "으시")
+    .msg("동사 활용이 잘못되었습니다. 동사에서 받침 ㄹ을 떼고, '으'를 빼야 합니다. (예시: 졸으셨다→조셨다)")
+    .build(),
+
+    *rule()
+    .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
+    .tag_form(Tag.선어말어미, "으시")
+    .msg("형용사 활용이 잘못되었습니다. 동사에서 받침 ㄹ을 떼고, '으'를 빼야 합니다. (예시: 거칠으셨다→거치셨다)")
+    .build(),
+
+    *rule()
+    .AND(tag(Tag.동사), forms(_ㄹ동사들))
+    .tag_form(Tag.연결어미, "으면")
+    .msg("동사 활용이 잘못되었습니다. 형용사에서 받침 ㄹ을 떼고, '으'를 빼야 합니다. (예시: 썰으면→썰면)")
+    .build(),
+
+    *rule()
+    .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
+    .tag_form(Tag.관형사형전성어미, "은")
+    .msg("형용사 활용이 잘못되었습니다. 형용사에서 받침 ㄹ을 떼고, '으'를 빼야 합니다. (예시: 거칠은→거친)")
+    .build(),
+
     *rule()
     .tag_form(Tag.주격조사, "이")
     .tag_form(Tag.긍정지정사, "이")
@@ -737,6 +782,11 @@ _MIF = [
     .tag_form(Tag.관형사, "몇")
     .tag_form(Tag.의존명사, "일")
     .msg("'며칠'이 올바른 표현입니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "날으")
+    .msg("'날다'는 '나셨다', '날면'으로 써야 합니다.")
     .build(),
 ]
 
