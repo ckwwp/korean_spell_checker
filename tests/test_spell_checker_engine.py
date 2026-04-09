@@ -6,6 +6,7 @@ import pytest
 from korean_spell_checker.models.interface import Tag, SpellError, SpellErrorType
 from korean_spell_checker.engines.spell_checker import SpellChecker
 from korean_spell_checker.configs.spell_checker_config_builder import *
+from korean_spell_checker.utils.hangul import get_jongseong, is_jamo
 
 # ── 헬퍼 ──
 
@@ -15,10 +16,16 @@ class DummyToken:
     tag: str
     start: int
     end: int
+    lemma: str = ""
 
     @property
     def len(self) -> int:
         return self.end - self.start
+
+    @property
+    def batchim(self) -> str:
+        last = self.form[-1]
+        return last if is_jamo(last) else get_jongseong(last)
 
 def build_tokens(*args) -> list[DummyToken]:
     tokens = []
@@ -322,7 +329,7 @@ class TestEnginePerformanceWithDeafultConfig:
         end_time = time.perf_counter()
         elapsed = end_time - start_time
         
-        print(f"\n규칙 개수: {len(SPELL_CHECK_RULES)}개, root 자식 노드 개수: {len(self.checker._root._all_transitions)}\ntag 전이 개수: {len(self.checker._root.tag_transitions)}, form 전이 개수: {len(self.checker._root.form_transitions)}, tag and form 전이 개수: {len(self.checker._root.form_and_tag_transitions)}, fallback 개수: {len(self.checker._root.fallback_transitions)}")
+        print(f"\n규칙 개수: {len(SPELL_CHECK_RULES)}개, root 자식 노드 개수: {len(self.checker._root._all_transitions)}\ntag 전이 개수: {len(self.checker._root.tag_transitions)}, form 전이 개수: {len(self.checker._root.form_transitions)}, tag and form 전이 개수: {len(self.checker._root.form_and_tag_transitions)}, batchim 전이 개수: {len(self.checker._root.batchim_transitions)}, fallback 개수: {len(self.checker._root.fallback_transitions)}")
         print(f"[내장 규칙 성능 벤치마크] 토큰 {TOKEN_COUNT}개 처리 소요 시간: {elapsed:.4f}초")
         print(f"[내장 규칙 성능 벤치마크] 검출된 에러 개수: {len(errors)}개")
         

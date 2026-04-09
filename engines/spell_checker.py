@@ -4,8 +4,19 @@ from collections import deque
 from typing import Iterator
 
 from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType
-from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition, NotCondition
+from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition, NotCondition, BatchimCondition, AnyBatchimCondition
+from korean_spell_checker.utils.hangul import get_jongseong, is_jamo
 from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules
+
+@dataclass(slots=True)
+class _EnrichedToken:
+    form: str
+    tag: str
+    start: int
+    end: int
+    len: int
+    lemma: str
+    batchim: str
 
 @dataclass(frozen=True, slots=True)
 class _Transition:
@@ -15,7 +26,7 @@ class _Transition:
     is_optional: bool = False
 
 class _RuleNode:
-    __slots__ = ('tag_transitions', 'form_transitions', 'form_and_tag_transitions', 'fallback_transitions', '_all_transitions', '_optional_closure', 'output_message', 'output_path', 'error_type')
+    __slots__ = ('tag_transitions', 'form_transitions', 'form_and_tag_transitions', 'batchim_transitions', 'any_batchim_transitions', 'fallback_transitions', '_all_transitions', '_optional_closure', 'output_message', 'output_path', 'error_type')
 
     def __repr__(self):
         n = len(self._all_transitions)
@@ -26,7 +37,9 @@ class _RuleNode:
         self.tag_transitions: dict[str, list[_Transition]] = {}
         self.form_transitions: dict[str, list[_Transition]] = {}
         self.form_and_tag_transitions: dict[str, dict[str, list[_Transition]]] = {}
-        
+        self.batchim_transitions: dict[str, list[_Transition]] = {}
+        self.any_batchim_transitions: list[_Transition] = []
+
         self.fallback_transitions: list[_Transition] = []
         
         self._all_transitions: list[_Transition] = []
@@ -73,7 +86,7 @@ class _RuleNode:
         
         return next_node
     
-    def _find_transition(self, cond: Condition, spacing: SpacingRule, optional: bool) -> "_RuleNode" | None:
+    def _find_transition(self, cond: Condition, spacing: SpacingRule, optional: bool) -> _RuleNode | None:
         target_list = []
         
         if isinstance(cond, TagAndFormCondition):
@@ -84,6 +97,10 @@ class _RuleNode:
             target_list = self.tag_transitions.get(cond.tag, [])
         elif isinstance(cond, FormCondition):
             target_list = self.form_transitions.get(cond.form, [])
+        elif isinstance(cond, BatchimCondition):
+            target_list = self.batchim_transitions.get(cond.batchim, [])
+        elif isinstance(cond, AnyBatchimCondition):
+            target_list = self.any_batchim_transitions
         else:
             for t in self.fallback_transitions:
                 if t.condition == cond and t.spacing_rule == spacing and t.is_optional == optional:
@@ -102,6 +119,10 @@ class _RuleNode:
             self.tag_transitions.setdefault(cond.tag, []).append(trans)
         elif isinstance(cond, FormCondition):
             self.form_transitions.setdefault(cond.form, []).append(trans)
+        elif isinstance(cond, BatchimCondition):
+            self.batchim_transitions.setdefault(cond.batchim, []).append(trans)
+        elif isinstance(cond, AnyBatchimCondition):
+            self.any_batchim_transitions.append(trans)
         else:
             self.fallback_transitions.append(trans)
         self._all_transitions.append(trans)
@@ -174,13 +195,21 @@ class SpellChecker:
         동일 노드에 여러 커서가 도달하면 가장 늦은 시작점만 유지 (최단 매치 우선).
         루프 종료 후 남은 커서에 대해 optional/NOT 전이를 엡실론으로 확장해 출력 수집 (EOF epsilon).
         """
+        enriched_tokens = [
+            _EnrichedToken(
+                form=t.form, tag=t.tag, start=t.start, end=t.end, len=t.len, lemma=t.lemma,
+                batchim=(t.form[-1] if is_jamo(t.form[-1]) else get_jongseong(t.form[-1]))
+            )
+            for t in tokens
+        ]
+
         active_cursors: dict[_RuleNode, int] = {}
         next_cursors: dict[_RuleNode, int] = {}
         expanded_cursors: dict[_RuleNode, int] = {}
-        
+
         candidates = []
-        
-        for i, token in enumerate(tokens):
+
+        for i, token in enumerate(enriched_tokens):
             has_space = (token.start - tokens[i-1].end > 0) if i > 0 else False
 
             active_cursors[self._root] = i
@@ -239,6 +268,10 @@ class SpellChecker:
                     candidates.extend(tt)
                 if ft2 := node.form_transitions.get(token.form):
                     candidates.extend(ft2)
+                if token.batchim:
+                    if bt := node.batchim_transitions.get(token.batchim):
+                        candidates.extend(bt)
+                    candidates.extend(node.any_batchim_transitions)
 
                 for t in node.fallback_transitions:
                     if t.condition.match(token):
