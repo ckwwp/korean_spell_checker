@@ -633,10 +633,10 @@ _NNB = [
     
     *rule()
     .tag_form(Tag.관형사, "아무")
-    .tag_form(Tag.일반명사, "문제")
+    .AND(tag(Tag.일반명사), forms({"문제", "상관", "관계", "재미"}))
     .forms({"없", "없이"})
     .if_not_spaced()
-    .msg("'아무 문제 없다'로 띄어 써야 합니다.")
+    .msg("'아무 {form[1]} 없다'로 띄어 써야 합니다.")
     .build(),
 
     *rule()
@@ -1138,6 +1138,163 @@ _NNG = [
     .if_spaced()
     .msg("'물소리'로 붙여 써야 합니다.")
     .build(),
+
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.형용사, "멀")
+    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.일반명사, "바다")
+    .if_spaced()
+    .msg("'먼바다'로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.일반명사, "세상")
+    .tag_form(Tag.일반명사, "일")
+    .if_spaced()
+    .msg("'세상일'로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사}))
+    .tag_form(Tag.일반명사, "군")
+    .tag_form(Tag.일반명사, "자금")
+    .if_spaced()
+    .msg("'군자금'으로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.동사, "지나")
+    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.일반명사, "날")
+    .if_spaced()
+    .msg("'지난날'로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "수정")
+    .tag_form(Tag.일반명사, "구슬")
+    .if_not_spaced()
+    .msg("'수정 구슬'로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "첫")
+    .tag_form(Tag.일반명사, "걸음")
+    .if_spaced()
+    .msg("'첫걸음'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.일반명사, "예상")
+    .tag_form(Tag.의존명사, "외")
+    .if_spaced()
+    .msg("'예상외'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.관형사, "한")
+    .tag_form(Tag.일반명사, "마음")
+    .if_spaced()
+    .msg("'같은 마음'의 의미일 경우 '한마음'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.일반명사, "섬")
+    .tag_form(Tag.일반명사, "사람")
+    .if_spaced()
+    .msg("'섬사람'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
+    .tag_form(Tag.일반명사, "약")
+    .tag_form(Tag.일반명사, "재료")
+    .if_spaced()
+    .msg("'약재료'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "점심")
+    .tag_form(Tag.일반명사, "때")
+    .if_spaced()
+    .msg("'점심때'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "평상")
+    .tag_form(Tag.의존명사, "시")
+    .if_spaced()
+    .msg("'평상시'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "주")
+    .tag_form(Tag.일반명사, "무대")
+    .if_spaced()
+    .msg("'주무대'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "단벌")
+    .tag_form(Tag.일반명사, "옷")
+    .if_spaced()
+    .msg("'단벌옷'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "끝")
+    .tag_form(Tag.일반명사, "부분")
+    .if_spaced()
+    .msg("'끝부분'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "허튼")
+    .tag_form(Tag.일반명사, "짓")
+    .if_spaced()
+    .msg("'허튼짓'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "미치")
+    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.일반명사, "놈")
+    .if_spaced()
+    .msg("'미친놈'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"울음", "웃음", "노랫"}))
+    .tag_form(Tag.일반명사, "소리")
+    .if_spaced()
+    .msg("'{form[0]}소리'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "대역")
+    .tag_form(Tag.일반명사, "죄인")
+    .if_spaced()
+    .msg("'대역죄인'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "유리")
+    .tag_form(Tag.일반명사, "구슬")
+    .if_spaced()
+    .msg("'유리구슬'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "구급")
+    .tag_form(Tag.일반명사, "상자")
+    .if_spaced()
+    .msg("'구급상자'로 붙여 써야 합니다.")
+    .build(),
 ]
 
 _NR = [
@@ -1357,7 +1514,7 @@ _VX = [
     .build(),
 ]
 
-_있다_없다_띄어쓰기_set = {"인기", "필요", "품위"}
+_있다_없다_띄어쓰기_set = {"인기", "필요", "품위", "상관", "관계", "재미"}
 
 _VA = [
     *rule()
@@ -1369,7 +1526,7 @@ _VA = [
 
     *rule()
     .NOT(tag(Tag.관형사))
-    .forms({"꼼짝", "쓸데", "문제"})
+    .forms({"꼼짝", "쓸데", "문제", "빈틈", "온데간데", "꾸밈"})
     .OR(tag_form(Tag.형용사, "없"), tag_form(Tag.일반부사, "없이"))
     .if_spaced()
     .msg("'{form[0]}없다'로 붙여 써야 합니다.")
@@ -1562,7 +1719,7 @@ _ETM = [
 
 _XSA = [
     *rule()
-    .NOT(tags({Tag.종결부호, Tag.닫는부호, Tag.줄임표}))
+    .NOT(tags({Tag.종결부호, Tag.줄임표}))
     .tag_form(Tag.형용사파생접미사규칙활용, "답")
     .if_spaced()
     .msg("'답다'를 앞 말에 붙여 써야 합니다.")
@@ -1608,6 +1765,13 @@ _NEED_ML_JUDGE = [
     .form("수록")
     .if_spaced()
     .msg("'ㄹ수록'은 어미이므로 앞 말에 붙여 써야 합니다. (예: 하면 할수록)")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "저")
+    .tag_form(Tag.일반명사, "세상")
+    .if_spaced()
+    .msg("'저승'의 의미일 경우 '저세상'으로 붙여 써야 합니다.")
     .build(),
 ]
 
