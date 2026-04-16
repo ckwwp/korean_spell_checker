@@ -1,16 +1,15 @@
-"""BK-Tree: 한글 자모 분리 Levenshtein 기반 근사 검색.
+"""BK-Tree: 한글 자모 분리 Damerau-Levenshtein 기반 근사 검색.
 
 pickle 포함 시 이 파일이 임포트 가능한 경로에 있어야 합니다.
 quick_launcher.pyw 가 scripts/ 를 sys.path 에 추가하므로
 같은 scripts/ 폴더에 위치하면 됩니다.
 """
 from jamo import h2j
-from rapidfuzz.distance import Levenshtein as _Lev
-
+from rapidfuzz.distance import DamerauLevenshtein as _DL
 
 def _dist(a: str, b: str) -> int:
-    """jamo 분리 후 Levenshtein 거리."""
-    return _Lev.distance(h2j(a), h2j(b))
+    """jamo 분리 후 Damerau-Levenshtein 거리."""
+    return _DL.distance(h2j(a), h2j(b))
 
 
 class BKTree:
