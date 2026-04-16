@@ -131,6 +131,20 @@ GENERAL_SPACING_ERRORS: list[KoSpellRules] = [
     .if_not_spaced()
     .msg("'안' 뒤를 띄어 써야 합니다.")
     .build(),
+
+    *rule()
+    .tag_form(Tag.관형격조사, "의")
+    .any()
+    .if_not_spaced()
+    .msg("'의' 뒤를 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.연결어미, "어야")
+    .tag_form(Tag.선어말어미, "겠")
+    .if_spaced()
+    .msg("'~야겠다'로 붙여 써야 합니다.")
+    .build(),
 ]
 
 _SPACING_ERRORS = [
@@ -766,21 +780,7 @@ _NNB = [
     .build(),
 ]
 
-_NNG = [
-    *rule()
-    .AND(tag(Tag.일반명사), forms({"글자", "소지"}))
-    .tag_form(Tag.일반명사, "수")
-    .if_not_spaced()
-    .msg("수량을 나타내는 '수'는 앞 말과 띄어 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .AND(tag(Tag.일반명사), forms({"인원", "상당", "과반", "번지"}))
-    .tag_form(Tag.일반명사, "수")
-    .if_spaced()
-    .msg("'수'를 붙여 써야 합니다.")
-    .build(),
-    
+_NNG = [        
     *rule()
     .tag(Tag.고유명사)
     .tag_form(Tag.일반명사, "경")
@@ -803,6 +803,7 @@ _NNG = [
     .build(),
     
     *rule()
+    .NOT(forms({"허튼"}))
     .tag_form(Tag.일반명사, "짓")
     .if_not_spaced()
     .msg("'짓'을 앞 말과 띄어 써야 합니다.")
@@ -926,13 +927,6 @@ _NNG = [
     .build(),
     
     *rule()
-    .tag_form(Tag.일반명사, "산")
-    .tag_form(Tag.일반명사, "속")
-    .if_spaced()
-    .msg("'산속'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
     .AND(tag(Tag.일반명사), forms({"수건", "휴지"}))
     .tag_form(Tag.일반명사, "걸이")
     .if_spaced()
@@ -944,20 +938,6 @@ _NNG = [
     .AND(tag(Tag.일반명사), forms({"안", "속"}))
     .if_spaced()
     .msg("'입안'으로 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag_form(Tag.일반명사, "몸")
-    .tag_form(Tag.일반명사, "속")
-    .if_spaced()
-    .msg("'몸속'으로 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag_form(Tag.일반명사, "눈")
-    .tag_form(Tag.일반명사, "앞")
-    .if_spaced()
-    .msg("'눈앞'으로 붙여 써야 합니다.")
     .build(),
     
     *rule()
@@ -996,13 +976,6 @@ _NNG = [
     .tag_form(Tag.일반명사, "돈")
     .if_spaced()
     .msg("'큰돈'으로 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag_form(Tag.일반명사, "창")
-    .tag_form(Tag.일반명사, "밖")
-    .if_spaced()
-    .msg("'창밖'으로 붙여 써야 합니다.")
     .build(),
 
     *rule()
@@ -1051,13 +1024,6 @@ _NNG = [
     .build(),
     
     *rule()
-    .tag_form(Tag.일반명사, "문")
-    .tag_form(Tag.일반명사, "밖")
-    .if_spaced()
-    .msg("'문밖'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
     .tag_form(Tag.관형사, "그")
     .tag_form(Tag.일반명사, "동안")
     .if_spaced()
@@ -1081,14 +1047,7 @@ _NNG = [
     .if_spaced()
     .msg("'죽을병'으로 붙여 써야 합니다.")
     .build(),
-
-    *rule()
-    .tag_form(Tag.일반명사, "소")
-    .tag_form(Tag.일반명사, "머리")
-    .if_spaced()
-    .msg("'소머리'로 붙여 써야 합니다.")
-    .build(),
-
+    
     *rule()
     .tag_form(Tag.동사, "내치")
     .tag_form(Tag.관형사형전성어미, "ㄴ")
@@ -1105,13 +1064,6 @@ _NNG = [
     .build(),
 
     *rule()
-    .AND(tag(Tag.일반명사), forms({"활용"}))
-    .tag_form(Tag.일반명사, "법")
-    .if_spaced()
-    .msg("'{form[0]}법'으로 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
     .tag_form(Tag.일반명사, "다음")
     .tag_form(Tag.의존명사, "번")
     .if_spaced()
@@ -1124,20 +1076,7 @@ _NNG = [
     .tag_form(Tag.일반명사, "말")
     .if_spaced()
     .msg("'바른말'로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .tag_form(Tag.일반명사, "마음")
-    .tag_form(Tag.일반명사, "속")
-    .msg("'마음속'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .tag_form(Tag.일반명사, "물")
-    .tag_form(Tag.일반명사, "소리")
-    .if_spaced()
-    .msg("'물소리'로 붙여 써야 합니다.")
-    .build(),
+    .build(),   
 
     *rule()
     .NOT(tags({Tag.관형사, Tag.관형사형전성어미, Tag.형용사파생접미사, Tag.관형격조사, Tag.목적격조사}))
@@ -1170,13 +1109,6 @@ _NNG = [
     .tag_form(Tag.일반명사, "날")
     .if_spaced()
     .msg("'지난날'로 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag_form(Tag.일반명사, "수정")
-    .tag_form(Tag.일반명사, "구슬")
-    .if_not_spaced()
-    .msg("'수정 구슬'로 띄어 써야 합니다.")
     .build(),
     
     *rule()
@@ -1216,14 +1148,7 @@ _NNG = [
     .tag_form(Tag.일반명사, "재료")
     .if_spaced()
     .msg("'약재료'로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .tag_form(Tag.일반명사, "점심")
-    .tag_form(Tag.일반명사, "때")
-    .if_spaced()
-    .msg("'점심때'로 붙여 써야 합니다.")
-    .build(),
+    .build(), 
     
     *rule()
     .tag_form(Tag.일반명사, "평상")
@@ -1240,6 +1165,156 @@ _NNG = [
     .build(),
     
     *rule()
+    .tag_form(Tag.관형사, "허튼")
+    .tag_form(Tag.일반명사, "짓")
+    .if_spaced()
+    .msg("'허튼짓'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.동사, "미치")
+    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.의존명사, "놈")
+    .if_spaced()
+    .msg("'미친놈'으로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.관형사, "새")
+    .tag_form(Tag.일반명사, "출발")
+    .if_spaced()
+    .msg("'새출발'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.어근, "깜찍")
+    .tag_form(Tag.어근, "발랄")
+    .if_spaced()
+    .msg("'깜찍발랄'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .form("소강")
+    .tag_form(Tag.일반명사, "상태")
+    .if_spaced()
+    .msg("'소강상태'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .form("자기")
+    .tag_form(Tag.일반명사, "소개")
+    .if_spaced()
+    .msg("'자기소개'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.관형사, "그")
+    .tag_form(Tag.일반명사, "때")
+    .if_spaced()
+    .msg("'그때'로 붙여 써야 합니다.")
+    .build(),
+]
+
+_NNG_NNG = [
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"글자", "소지"}))
+    .tag_form(Tag.일반명사, "수")
+    .if_not_spaced()
+    .msg("'{form[0]} 수'로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"인원", "상당", "과반", "번지"}))
+    .tag_form(Tag.일반명사, "수")
+    .if_spaced()
+    .msg("'{form[0]}수'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"활용"}))
+    .tag_form(Tag.일반명사, "법")
+    .if_spaced()
+    .msg("'{form[0]}법'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .AND(tag(Tag.일반명사), forms({"울음", "웃음", "노랫"}))
+    .tag_form(Tag.일반명사, "소리")
+    .if_spaced()
+    .msg("'{form[0]}소리'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "산")
+    .tag_form(Tag.일반명사, "속")
+    .if_spaced()
+    .msg("'산속'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "몸")
+    .tag_form(Tag.일반명사, "속")
+    .if_spaced()
+    .msg("'몸속'으로 붙여 써야 합니다.")
+    .build(),
+
+    *rule()
+    .tag_form(Tag.일반명사, "눈")
+    .tag_form(Tag.일반명사, "앞")
+    .if_spaced()
+    .msg("'눈앞'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "창")
+    .tag_form(Tag.일반명사, "밖")
+    .if_spaced()
+    .msg("'창밖'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "문")
+    .tag_form(Tag.일반명사, "밖")
+    .if_spaced()
+    .msg("'문밖'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "소")
+    .tag_form(Tag.일반명사, "머리")
+    .if_spaced()
+    .msg("'소머리'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "마음")
+    .tag_form(Tag.일반명사, "속")
+    .if_spaced()
+    .msg("'마음속'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "물")
+    .tag_form(Tag.일반명사, "소리")
+    .if_spaced()
+    .msg("'물소리'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "수정")
+    .tag_form(Tag.일반명사, "구슬")
+    .if_not_spaced()
+    .msg("'수정 구슬'로 띄어 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "점심")
+    .tag_form(Tag.일반명사, "때")
+    .if_spaced()
+    .msg("'점심때'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
     .tag_form(Tag.일반명사, "단벌")
     .tag_form(Tag.일반명사, "옷")
     .if_spaced()
@@ -1251,28 +1326,6 @@ _NNG = [
     .tag_form(Tag.일반명사, "부분")
     .if_spaced()
     .msg("'끝부분'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .tag_form(Tag.관형사, "허튼")
-    .tag_form(Tag.일반명사, "짓")
-    .if_spaced()
-    .msg("'허튼짓'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .tag_form(Tag.동사, "미치")
-    .tag_form(Tag.관형사형전성어미, "ㄴ")
-    .tag_form(Tag.일반명사, "놈")
-    .if_spaced()
-    .msg("'미친놈'으로 붙여 써야 합니다.")
-    .build(),
-    
-    *rule()
-    .AND(tag(Tag.일반명사), forms({"울음", "웃음", "노랫"}))
-    .tag_form(Tag.일반명사, "소리")
-    .if_spaced()
-    .msg("'{form[0]}소리'로 붙여 써야 합니다.")
     .build(),
     
     *rule()
@@ -1294,6 +1347,118 @@ _NNG = [
     .tag_form(Tag.일반명사, "상자")
     .if_spaced()
     .msg("'구급상자'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "영화")
+    .tag_form(Tag.일반명사, "배우")
+    .if_spaced()
+    .msg("'영화배우'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "얼굴")
+    .tag_form(Tag.일반명사, "도장")
+    .if_spaced()
+    .msg("'얼굴도장'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "단골")
+    .tag_form(Tag.일반명사, "손님")
+    .if_spaced()
+    .msg("'단골손님'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "바깥")
+    .tag_form(Tag.일반명사, "세상")
+    .if_spaced()
+    .msg("'바깥세상'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "어미")
+    .tag_form(Tag.일반명사, "벌레")
+    .if_spaced()
+    .msg("'어미벌레'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "결사")
+    .tag_form(Tag.일반명사, "반대")
+    .if_spaced()
+    .msg("'결사반대'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "인간")
+    .tag_form(Tag.일반명사, "관계")
+    .if_spaced()
+    .msg("'인간관계'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "민간")
+    .tag_form(Tag.일반명사, "전승")
+    .if_spaced()
+    .msg("'민간전승'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "민간")
+    .tag_form(Tag.일반명사, "요법")
+    .if_spaced()
+    .msg("'민간전승'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "에덴")
+    .tag_form(Tag.일반명사, "동산")
+    .if_spaced()
+    .msg("'에덴동산'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "정체")
+    .tag_form(Tag.일반명사, "불명")
+    .if_spaced()
+    .msg("'정체불명'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "자연")
+    .tag_form(Tag.일반명사, "재해")
+    .if_spaced()
+    .msg("'자연재해'로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "시간")
+    .tag_form(Tag.일반명사, "제한")
+    .if_spaced()
+    .msg("'시간제한'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "황소")
+    .tag_form(Tag.일반명사, "고집")
+    .if_spaced()
+    .msg("'황소고집'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "예행")
+    .tag_form(Tag.일반명사, "연습")
+    .if_spaced()
+    .msg("'예행연습'으로 붙여 써야 합니다.")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.일반명사, "기념")
+    .tag_form(Tag.일반명사, "사진")
+    .if_spaced()
+    .msg("'기념사진'으로 붙여 써야 합니다.")
     .build(),
 ]
 
@@ -1597,17 +1762,16 @@ _MAG = [
     .if_spaced()
     .msg("'더욱더'로 붙여 써야 합니다.")
     .build(),
+    
+    *rule()
+    .tag_form(Tag.일반부사, "바로")
+    .tag_form(Tag.일반부사, "바로")
+    .if_spaced()
+    .msg("'바로바로'로 붙여 써야 합니다.")
+    .build(),
 ]
 
-_JX = [
-    *rule()
-    .tag(Tag.일반명사)
-    .tag_form(Tag.부사격조사, "보다")
-    .if_spaced()
-    .tag_form(Tag.보조사, "는")
-    .msg("비교의 의미인 '보다'는 앞 말과 붙여 써야 합니다.")
-    .build(),
-    
+_JX = [    
     *rule()
     .tags(TagGroup.체언)
     .tag_form(Tag.보조사, "밖에")
@@ -1779,6 +1943,7 @@ SPACING_ERRORS = [
     *_SPACING_ERRORS,
     *_NNB,
     *_NNG,
+    *_NNG_NNG,
     *_NR,
     *_VV,
     *_VX,
