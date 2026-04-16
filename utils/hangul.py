@@ -43,4 +43,29 @@ def get_jungseong(char: str) -> str:
 
 def get_jongseong(char: str) -> str:
     return JONG_LIST[(convert_to_hangul_charpoint(char) % JONGSEONG_IDX_POINT)]
-    
+
+def remove_batchim(char: str) -> str:
+    if len(char) != 1:
+        raise ValueError(f"single character expected, got '{char}'")
+
+    code = ord(char)
+    if not (HANGUL_COMP_START <= code <= HANGUL_COMP_END):
+        return char
+
+    jongseong_idx = (code - HANGUL_COMP_START) % JONGSEONG_IDX_POINT
+    if jongseong_idx == 0:
+        return char
+
+    return chr(code - jongseong_idx)
+
+def replace_batchim(char: str, jamo: str) -> str:
+    if len(char) != 1:
+        raise ValueError(f"single character expected, got '{char}'")
+
+    code = ord(char)
+    if not (HANGUL_COMP_START <= code <= HANGUL_COMP_END):
+        return char
+
+    base_code = ord(remove_batchim(char))
+    jong_idx = JONG_LIST.index(jamo)
+    return chr(base_code + jong_idx)

@@ -5,6 +5,7 @@ import re
 
 from korean_spell_checker.models.spell_checker_classes import *
 from korean_spell_checker.models.interface import SpellErrorType
+from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
 
 ErrorMessage: TypeAlias = str
 RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool]]
@@ -12,11 +13,17 @@ KoSpellRules: TypeAlias = tuple[RuleSteps, ErrorMessage, SpellErrorType]
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
 
 # {form} / {form[N]} / {조사a,조사b} 플레이스홀더 처리
-_TEMPLATE_PATTERN = re.compile(r'\{form(?:\[(-?\d+)\])?\}|\{([^{},\[\]]+),([^{},\[\]]+)\}')
+_TEMPLATE_PATTERN = re.compile(
+    r'\{(form|batchimremovedform)(?:\[(-?\d+)\])?\}'
+    r'|\{(batchimreplacedform)(?:\[(-?\d+)\])?,([ㄱ-ㅎ])\}'
+    r'|\{([^{},\[\]]+),([^{},\[\]]+)\}'
+)
 
 def _select_josa(a: str, b: str, last_char: str) -> str:
-    """받침 여부에 따라 a(받침 있음) / b(받침 없음) 선택.
-    으로/로 계열: ㄹ받침이면 b("로")."""
+    """
+    받침 여부에 따라 a(받침 있음) / b(받침 없음) 선택.
+    으로/로 계열: ㄹ받침이면 b로.
+    """
     if not ('가' <= last_char <= '힣'):
         return b
     code = (ord(last_char) - 0xAC00) % 28
@@ -27,10 +34,13 @@ def _select_josa(a: str, b: str, last_char: str) -> str:
     return a
 
 def _resolve_msg(template: str, combo: tuple) -> str:
-    """메시지 템플릿의 플레이스홀더를 combo의 form 값으로 치환.
+    """
+    메시지 템플릿의 플레이스홀더를 combo의 form 값으로 치환.
 
     - {form}    → combo의 마지막 TagAndFormCondition / FormCondition의 form
     - {form[N]} → N번째 TagAndFormCondition / FormCondition의 form (음수 인덱스 지원)
+    - {batchimremovedform[N]} → 받침 제거된 form
+    - {batchimreplacedform[N],A} → 받침을 A로 변경한 form
     - {a,b}     → 직전에 치환된 form의 받침 여부로 a/b 선택
     조사 마커는 직전 {form} 기준으로 결정되며, {form} 없이 단독 사용 시 마지막 form 기준.
     """
@@ -44,16 +54,37 @@ def _resolve_msg(template: str, combo: tuple) -> str:
 
     def replacer(m: re.Match) -> str:
         nonlocal current_last_char
-        if m.group(2) is None:  # {form} 또는 {form[N]}
-            idx_str = m.group(1)
+
+        if m.group(1) is not None:                            # {form} / {batchimremovedform}
+            keyword = m.group(1)
+            idx_str = m.group(2)
             try:
                 val = form_vals[-1] if idx_str is None else form_vals[int(idx_str)]
             except IndexError:
                 return m.group(0)
+
+            if keyword == 'batchimremovedform' and val:
+                val = val[:-1] + remove_batchim(val[-1])
+
             current_last_char = val[-1] if val else ""
             return val
-        else:  # {a,b} 조사
-            return _select_josa(m.group(2), m.group(3), current_last_char)
+
+        elif m.group(3) is not None:                          # {batchimreplacedform[N],ㅈ}
+            idx_str = m.group(4)
+            jamo = m.group(5)
+            try:
+                val = form_vals[-1] if idx_str is None else form_vals[int(idx_str)]
+            except IndexError:
+                return m.group(0)
+
+            if val:
+                val = val[:-1] + replace_batchim(val[-1], jamo)
+
+            current_last_char = val[-1] if val else ""
+            return val
+
+        else:                                                 # {a,b} 조사
+            return _select_josa(m.group(6), m.group(7), current_last_char)
 
     return _TEMPLATE_PATTERN.sub(replacer, template)
 
@@ -157,6 +188,8 @@ class RuleBuilder:
         {form}으로 form 조건을 지정할 수 있음.
         
         {form[0]}: 0번째 form 조건
+        {batchimremovedform[0]}: 0번째 form 조건에서 마지막 글자의 받침을 뺀 str
+        {batchimreplacedform[0],A}: 0번째 form 조건의 마지막 받침을 A로 바꾼 str
         
         {을,를} 리터럴로 조사 표현 가능.
         """
