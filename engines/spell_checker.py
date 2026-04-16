@@ -195,6 +195,7 @@ class SpellChecker:
         동일 노드에 여러 커서가 도달하면 가장 늦은 시작점만 유지 (최단 매치 우선).
         루프 종료 후 남은 커서에 대해 optional/NOT 전이를 엡실론으로 확장해 출력 수집 (EOF epsilon).
         """
+        # 여러 번 실행되는 함수라 대부분을 인라인으로 작성.
         enriched_tokens = [
             _EnrichedToken(
                 form=t.form, tag=t.tag, start=t.start, end=t.end, len=t.len, lemma=t.lemma,
