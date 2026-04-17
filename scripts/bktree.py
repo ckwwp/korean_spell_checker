@@ -7,23 +7,21 @@ quick_launcher.pyw 가 scripts/ 를 sys.path 에 추가하므로
 from jamo import h2j
 from rapidfuzz.distance import DamerauLevenshtein as _DL
 
-def _dist(a: str, b: str) -> int:
-    """jamo 분리 후 Damerau-Levenshtein 거리."""
-    return _DL.distance(h2j(a), h2j(b))
-
 
 class BKTree:
     """BK-Tree 노드 (iterative insert, pickle 가능)."""
-    __slots__ = ('word', 'children')
+    __slots__ = ('word', 'jamo', 'children')
 
     def __init__(self, word: str):
         self.word: str = word
+        self.jamo: str = h2j(word)
         self.children: dict[int, 'BKTree'] = {}
 
     def insert(self, word: str) -> None:
         node = self
+        word_jamo = h2j(word)
         while True:
-            d = _dist(node.word, word)
+            d = _DL.distance(node.jamo, word_jamo)
             if d == 0:
                 return  # 중복
             if d in node.children:
@@ -34,11 +32,12 @@ class BKTree:
 
     def search(self, query: str, threshold: int) -> list[tuple[int, str]]:
         """(distance, word) 리스트를 거리 오름차순으로 반환."""
+        q_jamo = h2j(query)
         out: list[tuple[int, str]] = []
         stack = [self]
         while stack:
             node = stack.pop()
-            d = _dist(node.word, query)
+            d = _DL.distance(node.jamo, q_jamo)
             if d <= threshold:
                 out.append((d, node.word))
             lo, hi = d - threshold, d + threshold
