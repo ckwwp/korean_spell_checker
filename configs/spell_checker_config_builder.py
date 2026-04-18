@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import re
 
 from korean_spell_checker.models.spell_checker_classes import *
-from korean_spell_checker.models.interface import SpellErrorType
+from korean_spell_checker.models.interface import SpellErrorType, Tag
 from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
 
 ErrorMessage: TypeAlias = str
