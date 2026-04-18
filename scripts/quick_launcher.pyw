@@ -663,6 +663,14 @@ class Api:
             return f"사전 파일 로드 오류: {e}"
         return None
 
+    def _match_score(self, query: str, word: str) -> float:
+        word_norm = re.sub(r'[0-9]', '', word) or word
+        if word_norm == query:
+            return 1.0
+        if word_norm.startswith(query):
+            return 0.8 + len(query) / len(word_norm) * 0.2
+        return len(query) / len(word_norm)
+
     def _fuzzy_suggest(self, query: str) -> list[dict]:
         """BK-Tree 로 유사어 최대 5건 반환. 숫자·기호 제거 후 중복 제거."""
         if not self._bktree:
@@ -705,6 +713,7 @@ class Api:
         plain_query = re.sub(r'[-^]', '', query)
         matched = [e for e in self._dict_data if plain_query in e['word_plain']]
         if matched:
+            matched.sort(key=lambda e: self._match_score(plain_query, e['word_plain']), reverse=True)
             return {"items": matched[:100]}
         suggestions = self._fuzzy_suggest(plain_query)
         return {"items": [], "suggestions": suggestions}
