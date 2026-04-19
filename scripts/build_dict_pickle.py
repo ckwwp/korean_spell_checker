@@ -20,8 +20,10 @@ from bktree import build as build_bktree
 
 
 def strip_symbols(word: str) -> str:
-    """'-', '^' 기호를 제거한 순수 단어 반환 (검색용)."""
-    return re.sub(r'[-^]', '', word)
+    """'-', '^' 기호 제거 및 끝부분 숫자 제거한 검색용 단어 반환."""
+    word = re.sub(r'[-^]', '', word)
+    word = re.sub(r'\d+$', '', word)
+    return word
 
 
 def parse_xml_file(xml_path: Path) -> list[dict]:
