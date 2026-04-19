@@ -129,7 +129,51 @@ class TestOptional:
         errors = list(self.checker.check(tokens))
         assert_empty(errors)
 
+BOS_EPSILON = [
+    *rule()
+    .NOT(form("BOS_NOT"))
+    .form("BOS_A")
+    .form("BOS_B")
+    .msg("bos epsilon")
+    .build(),
+]
 
+EOF_EPSILON = [
+    *rule()
+    .form("EOF_A")
+    .form("EOF_B")
+    .NOT(form("EOF_NOT"))
+    .msg("eof epsilon")
+    .build(),
+]
+
+class TestEpsilonTransition:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.checker = SpellChecker()
+        self.checker.add_rule_from_list(BOS_EPSILON)
+        self.checker.add_rule_from_list(EOF_EPSILON)
+
+    def test_bos_epsilon(self):
+        tokens = build_tokens(("BOS_A", Tag.일반명사), ("BOS_B", Tag.일반명사), ("BOS_C", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "bos epsilon", 0, 10)
+
+    def test_bos_false_case(self):
+        tokens = build_tokens(("BOS_NOT", Tag.일반명사), ("BOS_A", Tag.일반명사), ("BOS_B", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_empty(errors)
+
+    def test_eof_epsilon(self):
+        tokens = build_tokens(("EOF_A", Tag.일반명사), ("EOF_B", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "eof epsilon", 0, 10)
+        
+    def test_eof_false_case(self):
+        tokens = build_tokens(("EOF_A", Tag.일반명사), ("EOF_B", Tag.일반명사), ("EOF_NOT", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_empty(errors)    
+        
 # ── shortest match ──
 
 SHORTEST_MATCH_RULES = [
@@ -248,6 +292,13 @@ COMPLEX_CONDITION = [
     .AND(NOT(tag(Tag.일반명사)), form("0"))
     .msg("AND-NOT 조건 검사")
     .build(),
+    
+    *rule()
+    .AND(NOT(batchim("ㄹ")), any_batchim())
+    .OR(form("0"), tag(Tag.대명사))
+    .AND(length(4), tag(Tag.일반명사))
+    .msg("첫 토큰 NOT 조건 검사")
+    .build(),
 ]
 
 class TestComplexCondition:
@@ -257,11 +308,12 @@ class TestComplexCondition:
         self.checker.add_rule_from_list(COMPLEX_CONDITION)
         
     def test_complex_condition(self):
-        tokens = build_tokens(("밥", Tag.일반명사), ("0", Tag.숫자))
+        tokens = build_tokens(("밥", Tag.일반명사), ("0", Tag.숫자), ("아미타불", Tag.일반명사))
         errors = list(self.checker.check(tokens))
         assert_found(errors, "AND 조건 검사", 0, 2)
         assert_found(errors, "OR-AND 조건 검사", 0, 2)
         assert_found(errors, "AND-NOT 조건 검사", 0, 2)
+        assert_found(errors, "첫 토큰 NOT 조건 검사", 0, 6)
         
     def test_complex_condition_not_found(self):
         tokens = build_tokens(("밤", Tag.일반명사), ("1", Tag.숫자))
