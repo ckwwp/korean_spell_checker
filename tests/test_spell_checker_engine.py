@@ -364,7 +364,7 @@ class TestEnginePerformance:
         
 from korean_spell_checker.configs.spell_checker_config import SPELL_CHECK_RULES
         
-class TestEnginePerformanceWithDeafultConfig:
+class TestEnginePerformanceWithDefaultConfig:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.checker = SpellChecker()
