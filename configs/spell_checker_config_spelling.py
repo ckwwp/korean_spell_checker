@@ -193,6 +193,12 @@ _CERTAINS: list[KoSpellRules] = [
     .AND(tag(Tag.형용사), forms({"어줍잖", "어쭙찮", "어줍찮", "어쭙찮"}))
     .msg("'어쭙잖다'가 올바른 표현입니다.")
     .build(),
+    
+    *rule()
+    .tag(Tag.일반명사)
+    .tag_form(Tag.종결어미, "습니다")
+    .msg("'습니다' 앞에 '했', 또는 '됐'이 누락되지 않았나요?")
+    .build(),
 ]
 
 _OM = [
@@ -552,6 +558,11 @@ _REP = [
     .tag_form(Tag.일반명사, "액")
     .tag_form(Tag.일반명사, "채")
     .msg("'액체'의 오타가 아닌가요?")
+    .build(),
+    
+    *rule()
+    .tag_form(Tag.부사격조사, "마냥")
+    .msg("'마냥'은 비표준어이므로 '처럼', '같은'을 사용할 것을 권장합니다.")
     .build(),
 ]
 
