@@ -196,9 +196,9 @@ class RuleBuilder:
         self.message = input_msg
         return self
     
-    def errtype(self, error_type: SpellErrorType = None):
-        if error_type == None and self.error_type == None:
-            raise ValueError("Error type has not be set.")
+    def errtype(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
+        if self.error_type == SpellErrorType.NOT_SET:
+            raise ValueError("Error type has not been set.")
         
         self.error_type = error_type
         return self
