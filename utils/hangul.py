@@ -24,8 +24,13 @@ BATCHIM_REPLACE_MAP = {
 }
 
 def is_hangul(char: str):
-    charpoint = chr(char)
+    charpoint = ord(char)
     if HANGUL_COMP_START <= charpoint <= HANGUL_COMP_END or HANGUL_JAMO_START <= charpoint <= HANGUL_JAMO_END:
+        return True
+    return False
+
+def is_hangul_syllable(char: str):
+    if HANGUL_COMP_START <= ord(char) <= HANGUL_COMP_END:
         return True
     return False
 
