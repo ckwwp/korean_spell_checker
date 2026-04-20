@@ -24,6 +24,7 @@ class _Transition:
     target_node: _RuleNode
     spacing_rule: SpacingRule = SpacingRule.ANY
     is_optional: bool = False
+    is_context: bool = False
 
 class _RuleNode:
     __slots__ = ('tag_transitions', 'form_transitions', 'form_and_tag_transitions', 'batchim_transitions', 'any_batchim_transitions', 'fallback_transitions', '_all_transitions', '_optional_closure', 'output_message', 'output_path', 'error_type')
@@ -43,7 +44,7 @@ class _RuleNode:
         self.fallback_transitions: list[_Transition] = []
         
         self._all_transitions: list[_Transition] = []
-        self._optional_closure: set["_RuleNode"] | None = None
+        self._optional_closure: set[_RuleNode] | None = None
 
         self.output_message: str | None = None
         self.error_type: SpellErrorType = SpellErrorType.NOT_SET
@@ -72,21 +73,21 @@ class _RuleNode:
         self._optional_closure = closure
         return closure
     
-    def get_or_create_next_node(self, condition: Condition, spacing_rule: SpacingRule, is_optional: bool) -> "_RuleNode":
+    def get_or_create_next_node(self, condition: Condition, spacing_rule: SpacingRule, is_optional: bool, is_context: bool) -> _RuleNode:
         """조건에 맞는 간선을 찾거나 새로 생성하여 다음 노드를 반환하는 함수."""
         
-        existing_node = self._find_transition(condition, spacing_rule, is_optional)
+        existing_node = self._find_transition(condition, spacing_rule, is_optional, is_context)
         if existing_node:
             return existing_node
         
         next_node = _RuleNode()
-        new_trans = _Transition(condition=condition, target_node=next_node, spacing_rule=spacing_rule, is_optional=is_optional)
+        new_trans = _Transition(condition=condition, target_node=next_node, spacing_rule=spacing_rule, is_optional=is_optional, is_context=is_context)
         
         self._add_transition_to_node(condition, new_trans)
         
         return next_node
     
-    def _find_transition(self, cond: Condition, spacing: SpacingRule, optional: bool) -> _RuleNode | None:
+    def _find_transition(self, cond: Condition, spacing: SpacingRule, optional: bool, context: bool) -> _RuleNode | None:
         target_list = []
         
         if isinstance(cond, TagAndFormCondition):
@@ -103,13 +104,14 @@ class _RuleNode:
             target_list = self.any_batchim_transitions
         else:
             for t in self.fallback_transitions:
-                if t.condition == cond and t.spacing_rule == spacing and t.is_optional == optional:
+                if t.condition == cond and t.spacing_rule == spacing and t.is_optional == optional and t.is_context == context:
                     return t.target_node
             return None
 
         for t in target_list:
-            if t.spacing_rule == spacing and t.is_optional == optional:
+            if t.spacing_rule == spacing and t.is_optional == optional and t.is_context == context:
                 return t.target_node
+            
         return None
 
     def _add_transition_to_node(self, cond: Condition, trans: _Transition):
@@ -144,13 +146,14 @@ class SpellChecker:
         if len(conditions) == 0:
             return
           
-        for cond, spacing, optional in conditions:
-            current = current.get_or_create_next_node(condition=cond, spacing_rule=spacing, is_optional=optional)
+        for cond, spacing, optional, context in conditions:
+            current = current.get_or_create_next_node(condition=cond, spacing_rule=spacing, is_optional=optional, is_context=context)
             if self._debug:
-                path.append(f"{cond}, {spacing}, {optional}")
+                path.append(f"{cond}, {spacing}, {optional}, {context}")
             
         current.output_message = msg
         current.error_type = error_type
+
         if self._debug:
             current.output_path = "  →  ".join(path)
 
@@ -204,58 +207,72 @@ class SpellChecker:
             for t in tokens
         ]
 
-        active_cursors: dict[_RuleNode, int] = {}
-        next_cursors: dict[_RuleNode, int] = {}
-        expanded_cursors: dict[_RuleNode, int] = {}
+        active_cursors: dict[_RuleNode, tuple[int, int]] = {}
+        next_cursors: dict[_RuleNode, tuple[int, int]] = {}
+        expanded_cursors: dict[_RuleNode, tuple[int, int]] = {}
 
-        candidates = []
+        candidates: list[_Transition] = []
 
         for i, token in enumerate(enriched_tokens):
             has_space = (token.start - tokens[i-1].end > 0) if i > 0 else False
 
-            active_cursors[self._root] = i
+            active_cursors[self._root] = (-1, i)
 
             expanded_cursors.clear()
             
             # ── Phase 1: epsilon closure 확장 ──
-            for node, start_idx in active_cursors.items():
-                if node not in expanded_cursors or start_idx > expanded_cursors[node]:
-                    expanded_cursors[node] = start_idx
+            for node, idxs in active_cursors.items():
+                start_idx, end_idx = idxs
+
+                if node not in expanded_cursors or start_idx > expanded_cursors[node][0]:
+                    expanded_cursors[node] = (start_idx, end_idx) # 엡실론 전이이므로 인덱스 갱신 없음
 
                 for closure_node in node.get_optional_closure():
-                    if closure_node not in expanded_cursors or start_idx > expanded_cursors[closure_node]:
-                        expanded_cursors[closure_node] = start_idx
+                    if closure_node not in expanded_cursors or start_idx > expanded_cursors[closure_node][0]:
+                        expanded_cursors[closure_node] = (start_idx, end_idx)
 
             # ── BOS epsilon: 문장 시작에서 NOT 전이를 엡실론으로 처리 ──
             # spacing rule이 ANY인 경우에만 적용 (SPACED/ATTACHED는 실제 인접 토큰이 필요)
             if i == 0:
                 bos_queue = deque(expanded_cursors.items())
+
                 while bos_queue:
-                    current_node, start_idx = bos_queue.popleft()
+                    current_node, idxs = bos_queue.popleft()
+                    start_idx, end_idx = idxs
+
                     for trans in current_node._all_transitions:
                         if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY:
                             continue
+                        
                         target = trans.target_node
-                        if target not in expanded_cursors or start_idx > expanded_cursors[target]:
-                            expanded_cursors[target] = start_idx
-                            bos_queue.append((target, start_idx))
+                        if target not in expanded_cursors or start_idx > expanded_cursors[target][0]:
+                            if start_idx == -1 and not trans.is_context: # -1: is_context가 아닌 노드에 도달한 적 없는 상태
+                                start_idx = i
+                            if not trans.is_context: # end는 마지막으로 본 is_context가 아닌 토큰의 위치이므로 is_context가 False라면 매번 갱신
+                                end_idx = i
+
+                            expanded_cursors[target] = (start_idx, end_idx)
+
+                            bos_queue.append((target, (start_idx, end_idx)))
                             for opt_node in target.get_optional_closure():
-                                if opt_node not in expanded_cursors or start_idx > expanded_cursors[opt_node]:
-                                    expanded_cursors[opt_node] = start_idx
-                                    bos_queue.append((opt_node, start_idx))
+                                if opt_node not in expanded_cursors or start_idx > expanded_cursors[opt_node][0]:
+                                    expanded_cursors[opt_node] = (start_idx, end_idx)
+                                    bos_queue.append((opt_node, (start_idx, end_idx)))
 
             # ── Phase 2: 출력 수집 & 전이 탐색 ──
             next_cursors.clear()
             current_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
 
-            for node, start_idx in expanded_cursors.items():
+            for node, idxs in expanded_cursors.items():
+                start_idx, end_idx = idxs
+
                 if node.output_message and start_idx < i:
                     self._update_shortest_match(
                         current_step_errors,
                         node.output_message,
                         node.error_type,
                         tokens[start_idx].start,
-                        tokens[i - 1].end,
+                        tokens[end_idx].end,
                         node.output_path
                     )
             
@@ -286,15 +303,19 @@ class SpellChecker:
                         continue
 
                     target = trans.target_node
-                    if target not in next_cursors or start_idx > next_cursors[target]:
-                        next_cursors[target] = start_idx
+
+                    # context가 아닐 때만 index 갱신 (start_idx/end_idx를 직접 변경하지 않고 임시 변수 사용)
+                    if target not in next_cursors or start_idx > next_cursors[target][0]:
+                        new_start = i if (start_idx == -1 and not trans.is_context) else start_idx
+                        new_end = i if not trans.is_context else end_idx
+                        next_cursors[target] = (new_start, new_end)
             
             # ── Phase 3: 에러 yield & 커서 스왑 ──
             for msg, (err_type, start, end, output_path) in current_step_errors.items():
                 yield SpellError(
                     error_type=err_type,
                     error_message=msg,
-                    start_index= start,
+                    start_index=start,
                     end_index=end,
                     debug_path=output_path
                     )
@@ -305,28 +326,34 @@ class SpellChecker:
         if tokens:
             final_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
 
-            final_expanded: dict[_RuleNode, int] = {}
+            final_expanded: dict[_RuleNode, tuple[int, int]] = {}
             eof_queue = deque(active_cursors.items())
+
             while eof_queue:
-                node, start_idx = eof_queue.popleft()
-                if node in final_expanded and start_idx <= final_expanded[node]:
+                node, idxs = eof_queue.popleft()
+                start_idx, end_idx = idxs
+
+                if node in final_expanded and start_idx <= final_expanded[node][0]:
                     continue
-                final_expanded[node] = start_idx
+
+                final_expanded[node] = (start_idx, end_idx)
+
                 for trans in node._all_transitions:
                     is_not_any = isinstance(trans.condition, NotCondition) and trans.spacing_rule == SpacingRule.ANY
                     if trans.is_optional or is_not_any:
                         target = trans.target_node
-                        if target not in final_expanded or start_idx > final_expanded[target]:
-                            eof_queue.append((target, start_idx))
+                        if target not in final_expanded or start_idx > final_expanded[target][0]:
+                            eof_queue.append((target, (start_idx, end_idx)))
 
-            for node, start_idx in final_expanded.items():
+            for node, idxs in final_expanded.items():
+                start_idx, end_idx = idxs
                 if node.output_message:
                     self._update_shortest_match(
                         storage=final_step_errors,
                         msg=node.output_message,
                         error_type=node.error_type,
                         start=tokens[start_idx].start,
-                        end=tokens[-1].end,
+                        end=tokens[end_idx].end,
                         output_path=node.output_path
                     )
 

@@ -196,6 +196,6 @@ class KoToken(Protocol):
     len: int
     lemma: str
 
-class _InternalToken(KoToken, Protocol):
+class InternalToken(KoToken, Protocol):
     """받침 정보가 추가된 토큰 인터페이스."""
     batchim: str

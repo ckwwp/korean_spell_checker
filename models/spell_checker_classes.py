@@ -2,8 +2,7 @@ from enum import Enum, auto
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from korean_spell_checker.models.interface import _InternalToken
-
+from korean_spell_checker.models.interface import InternalToken
 
 class SpacingRule(Enum):
     """해당 단어 앞에 띄어쓰기 있는지 여부.
@@ -20,7 +19,7 @@ class SpacingRule(Enum):
 @dataclass(frozen=True, slots=True)
 class Condition(ABC):
     @abstractmethod
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         """상속받은 클래스에서 구현해야 하는 추상 메서드. 조건 만족 시 True를 반환하도록 구현해야 함."""
         raise NotImplementedError
 
@@ -28,14 +27,14 @@ class Condition(ABC):
 class TagCondition(Condition):
     tag: str
         
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.tag == self.tag
 
 @dataclass(frozen=True, slots=True)
 class FormCondition(Condition):
     form: str
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.form == self.form
     
 @dataclass(frozen=True, slots=True)
@@ -45,64 +44,64 @@ class TagAndFormCondition(Condition):
     form: str
     tag: str
     
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.form == self.form and token.tag == self.tag
 
 @dataclass(frozen=True, slots=True)
 class LemmaCondition(Condition):
     lemma: str
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.lemma == self.lemma
 
 @dataclass(frozen=True, slots=True)
 class AnyCondition(Condition):
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return True
 
 @dataclass(frozen=True, slots=True)
 class AnyBatchimCondition(Condition):
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.batchim != ""
 
 @dataclass(frozen=True, slots=True)
 class BatchimCondition(Condition):
     batchim: str
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.batchim == self.batchim
 
 @dataclass(frozen=True, slots=True)
 class LengthCondition(Condition):
     length: int
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.len >= self.length
     
 @dataclass(frozen=True, slots=True)
 class FirstTokenCondition(Condition):
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.start == 0
 
 @dataclass(frozen=True, slots=True)
 class TagSetCondition(Condition):
     tags: frozenset[str]
     
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.tag in self.tags
 
 @dataclass(frozen=True, slots=True)
 class FormSetCondition(Condition):
     forms: frozenset[str]
     
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return token.form in self.forms
             
 @dataclass(frozen=True, slots=True)
 class AndCondition(Condition):
     conditions: tuple[Condition, ...]
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         for cond in self.conditions:
             if not cond.match(token):
                 return False
@@ -122,5 +121,5 @@ class OrCondition(Condition):
 class NotCondition(Condition):
     condition: Condition
 
-    def match(self, token: _InternalToken) -> bool:
+    def match(self, token: InternalToken) -> bool:
         return not self.condition.match(token)

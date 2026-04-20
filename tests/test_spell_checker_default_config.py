@@ -12,7 +12,7 @@ from korean_spell_checker.models.interface import SpellErrorType
 class Case:
     text: str
     expect_error: bool = True
-    error_type: SpellErrorType = None
+    error_type: SpellErrorType = SpellErrorType.NOT_SET
 
 FILE_ERROR_MAPPING = {
     "spacing.tsv": SpellErrorType.SPACING,
@@ -27,7 +27,7 @@ def load_cases_from_tsv(file_path: Path) -> list[Case]:
         print(f"\n[Warning] {file_path.name} 파일이 없습니다. 해당 케이스를 건너뜁니다.")
         return cases
 
-    error_type = FILE_ERROR_MAPPING.get(file_path.name)
+    error_type = FILE_ERROR_MAPPING.get(file_path.name, SpellErrorType.NOT_SET)
     
     with open(file_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter="\t")

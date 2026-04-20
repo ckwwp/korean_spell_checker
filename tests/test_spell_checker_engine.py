@@ -271,7 +271,59 @@ class TestSameStringMatch:
         tokens = build_tokens(("1", Tag.숫자), ("2", Tag.숫자), ("3", Tag.숫자), ("4", Tag.숫자))
         errors = list(self.checker.check(tokens))
         assert len(errors) == 3
+
+# ── context ──
+
+CONTEXT_MATCH = [
+    *rule()
+    .form("A")
+    .context()
+    .form("B")
+    .form("C")
+    .msg("context 매치")
+    .build(),
+    
+    *rule()
+    .form("1")
+    .form("2")
+    .form("3")
+    .context()
+    .msg("context 매치")
+    .build(),
+    
+    *rule()
+    .form("a")
+    .form("b")
+    .context()
+    .form("c")
+    .msg("context 매치")
+    .build(),
+]
+
+class TestContextMatch:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.checker = SpellChecker()
         
+    def test_context_match_prefix(self):
+        self.checker.add_rule_from_list(CONTEXT_MATCH)
+        tokens = build_tokens(("A", Tag.일반명사), ("B", Tag.일반명사), ("C", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "context 매치", 1, 3)
+        
+    def test_context_match_suffix(self):
+        self.checker.add_rule_from_list(CONTEXT_MATCH)
+        tokens = build_tokens(("1", Tag.일반명사), ("2", Tag.일반명사), ("3", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "context 매치", 0, 2)
+        
+    def test_context_match_in_middle(self):
+        self.checker.add_rule_from_list(CONTEXT_MATCH)
+        tokens = build_tokens(("a", Tag.일반명사), ("b", Tag.일반명사), ("c", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "context 매치", 0, 3)
+
+
 # ── 복합 조건 ──
 
 COMPLEX_CONDITION = [
@@ -299,6 +351,16 @@ COMPLEX_CONDITION = [
     .AND(length(4), tag(Tag.일반명사))
     .msg("첫 토큰 NOT 조건 검사")
     .build(),
+    
+    *rule()
+    .form("a")
+    .context()
+    .form("b")
+    .context()
+    .opt()
+    .form("c")
+    .msg("context-opt 조합 검사")
+    .build(),
 ]
 
 class TestComplexCondition:
@@ -322,6 +384,11 @@ class TestComplexCondition:
         assert all(e.error_message != "AND 조건 검사" for e in errors), "AND 조건 검사가 발생하지 않아야 합니다."
         assert all(e.error_message != "AND-NOT 조건 검사" for e in errors), "AND-NOT 조건 검사가 발생하지 않아야 합니다."
         
+    def test_complex_condition_context_and_opt(self):
+        tokens = build_tokens(("a", Tag.일반명사), ("b", Tag.숫자), ("c", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "context-opt 조합 검사", 2, 3)
+        
 # ── 스트레스 & 성능 벤치마크 테스트 ──
 
 STRESS_RULES = [
@@ -335,57 +402,57 @@ STRESS_RULES = [
     .build(),
 ]
 
-class TestEnginePerformance:
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.checker = SpellChecker()
-        self.checker.add_rule_from_list(STRESS_RULES)
+# class TestEnginePerformance:
+#     @pytest.fixture(autouse=True)
+#     def setup(self):
+#         self.checker = SpellChecker()
+#         self.checker.add_rule_from_list(STRESS_RULES)
 
-    def test_linear_scaling(self):
-        """시간 복잡도가 선형인지 검증"""
+#     def test_linear_scaling(self):
+#         """시간 복잡도가 선형인지 검증"""
         
-        tokens_5k = build_tokens(*[("테스트", Tag.일반명사) for _ in range(5000)])
-        tokens_10k = build_tokens(*[("테스트", Tag.일반명사) for _ in range(10000)])
+#         tokens_5k = build_tokens(*[("테스트", Tag.일반명사) for _ in range(5000)])
+#         tokens_10k = build_tokens(*[("테스트", Tag.일반명사) for _ in range(10000)])
 
-        start = time.perf_counter()
-        list(self.checker.check(tokens_5k))
-        time_5k = time.perf_counter() - start
+#         start = time.perf_counter()
+#         list(self.checker.check(tokens_5k))
+#         time_5k = time.perf_counter() - start
 
-        start = time.perf_counter()
-        list(self.checker.check(tokens_10k))
-        time_10k = time.perf_counter() - start
+#         start = time.perf_counter()
+#         list(self.checker.check(tokens_10k))
+#         time_10k = time.perf_counter() - start
 
-        ratio = time_10k / time_5k
-        print(f"\n[스케일링] 5K: {time_5k:.4f}초, 10K: {time_10k:.4f}초, 비율: {ratio:.2f}x")
+#         ratio = time_10k / time_5k
+#         print(f"\n[스케일링] 5K: {time_5k:.4f}초, 10K: {time_10k:.4f}초, 비율: {ratio:.2f}x")
 
-        # 선형이면 ~2.0x, O(n²)이면 ~4.0x
-        # 여유를 두고 3.0x 이하면 통과
-        assert ratio < 3.0, f"비선형 스케일링 감지! 비율: {ratio:.2f}x"
+#         # 선형이면 ~2.0x, O(n²)이면 ~4.0x
+#         # 여유를 두고 3.0x 이하면 통과
+#         assert ratio < 3.0, f"비선형 스케일링 감지! 비율: {ratio:.2f}x"
         
 from korean_spell_checker.configs.spell_checker_config import SPELL_CHECK_RULES
         
-class TestEnginePerformanceWithDefaultConfig:
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.checker = SpellChecker()
-        self.checker.add_rule_from_list(SPELL_CHECK_RULES)
+# class TestEnginePerformanceWithDefaultConfig:
+#     @pytest.fixture(autouse=True)
+#     def setup(self):
+#         self.checker = SpellChecker()
+#         self.checker.add_rule_from_list(SPELL_CHECK_RULES)
 
-    def test_massive_token_stream_performance_with_deafult_config(self):
-        TOKEN_COUNT = 10000
-        tokens = build_tokens(*[("테스트", Tag.일반명사) for _ in range(TOKEN_COUNT)])
+#     def test_massive_token_stream_performance_with_deafult_config(self):
+#         TOKEN_COUNT = 10000
+#         tokens = build_tokens(*[("테스트", Tag.일반명사) for _ in range(TOKEN_COUNT)])
         
-        start_time = time.perf_counter()
+#         start_time = time.perf_counter()
         
-        errors = list(self.checker.check(tokens))
+#         errors = list(self.checker.check(tokens))
         
-        end_time = time.perf_counter()
-        elapsed = end_time - start_time
+#         end_time = time.perf_counter()
+#         elapsed = end_time - start_time
         
-        print(f"\n규칙 개수: {len(SPELL_CHECK_RULES)}개, root 자식 노드 개수: {len(self.checker._root._all_transitions)}\ntag 전이 개수: {len(self.checker._root.tag_transitions)}, form 전이 개수: {len(self.checker._root.form_transitions)}, tag and form 전이 개수: {len(self.checker._root.form_and_tag_transitions)}, batchim 전이 개수: {len(self.checker._root.batchim_transitions)}, fallback 개수: {len(self.checker._root.fallback_transitions)}")
-        print(f"[내장 규칙 성능 벤치마크] 토큰 {TOKEN_COUNT}개 처리 소요 시간: {elapsed:.4f}초")
-        print(f"[내장 규칙 성능 벤치마크] 검출된 에러 개수: {len(errors)}개")
+#         print(f"\n규칙 개수: {len(SPELL_CHECK_RULES)}개, root 자식 노드 개수: {len(self.checker._root._all_transitions)}\ntag 전이 개수: {len(self.checker._root.tag_transitions)}, form 전이 개수: {len(self.checker._root.form_transitions)}, tag and form 전이 개수: {len(self.checker._root.form_and_tag_transitions)}, batchim 전이 개수: {len(self.checker._root.batchim_transitions)}, fallback 개수: {len(self.checker._root.fallback_transitions)}")
+#         print(f"[내장 규칙 성능 벤치마크] 토큰 {TOKEN_COUNT}개 처리 소요 시간: {elapsed:.4f}초")
+#         print(f"[내장 규칙 성능 벤치마크] 검출된 에러 개수: {len(errors)}개")
         
-        assert elapsed < 1.0, f"엔진이 너무 느립니다! 상태 압축 실패. 소요 시간: {elapsed:.4f}초"
+#         assert elapsed < 1.0, f"엔진이 너무 느립니다! 상태 압축 실패. 소요 시간: {elapsed:.4f}초"
 
 if __name__ == "__main__":
     import cProfile

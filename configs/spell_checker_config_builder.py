@@ -2,13 +2,14 @@ from typing import TypeAlias
 from itertools import product
 from dataclasses import dataclass
 import re
+import warnings
 
 from korean_spell_checker.models.spell_checker_classes import *
 from korean_spell_checker.models.interface import SpellErrorType, Tag
 from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
 
 ErrorMessage: TypeAlias = str
-RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool]]
+RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]
 KoSpellRules: TypeAlias = tuple[RuleSteps, ErrorMessage, SpellErrorType]
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
 
@@ -103,12 +104,13 @@ class _RuleStepData:
         self.conditions: list[Condition] = conditions
         self.spacing_rule: SpacingRule = SpacingRule.ANY
         self.is_optional: bool = False
+        self.is_context: bool = False
         
     def __repr__(self):
         return f"_RuleStepData(conditions={self.conditions}, spacing_rule={self.spacing_rule}, is_optional={self.is_optional})"
 
 class RuleBuilder:
-    def __init__(self, error_type: SpellErrorType = None):
+    def __init__(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
         self.steps: list[_RuleStepData] = []
         self.message = None
         self.error_type: SpellErrorType = error_type
@@ -166,6 +168,15 @@ class RuleBuilder:
 
     def if_not_spaced(self):
         self._set_space(SpacingRule.ATTACHED)
+        return self
+    
+    def context(self):
+        if not self.steps:
+            raise ValueError("No condition to set context flag. Call a condition method first.")
+        if self.steps[-1].is_context:
+            warnings.warn("Context flag is already set on this condition.")
+        
+        self.steps[-1].is_context = True
         return self
 
     def opt(self):
@@ -229,7 +240,7 @@ class RuleBuilder:
         results: list[KoSpellRules] = []
         for combo in product(*condition_lists):
             rule_steps: RuleSteps = [
-                (cond, step.spacing_rule, step.is_optional)
+                (cond, step.spacing_rule, step.is_optional, step.is_context)
                 for cond, step in zip(combo, self.steps)
             ]
             results.append((rule_steps, _resolve_msg(self.message, combo), self.error_type))
@@ -308,7 +319,7 @@ def _optimize_and(params: tuple[AndParam, ...]) -> list[Condition]:
             raise TypeError(f"Unsupported AND parameter type: {type(p)}")
 
     if tag_values and form_values:
-        tf_combos = [
+        tf_combos: list[Condition]= [
             TagAndFormCondition(form=f, tag=t)
             for t, f in product(tag_values, form_values)
         ]
