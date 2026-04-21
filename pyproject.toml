@@ -13,6 +13,8 @@ exclude = ["korean_spell_checker.venv*", "korean_spell_checker.tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["perf: 성능 측정 테스트"]
+addopts = "-m 'not perf'"
 
 [tool.pyright]
 extraPaths = [".."]
