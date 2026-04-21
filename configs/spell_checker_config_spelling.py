@@ -229,6 +229,12 @@ _OM = [
     .tag_form(Tag.보조용언, "있")
     .msg("'쥐어져 있다'가 올바른 표현입니다.")
     .build(),
+
+    *rule()
+    .tag(Tag.일반명사)
+    .tag_form(Tag.연결어미, "으니")
+    .msg("오타가 아닌가요?")
+    .build(),
 ]
 
 _ADD = [
@@ -626,12 +632,13 @@ _MIF = [
     .msg("'~려야'가 올바른 표현입니다. 예: '하려야 할 수가 없다.'")
     .build(),
 
-    *rule()
-    .tag_form(Tag.형용사규칙활용, "낫")
-    .tag_form(Tag.연결어미, "어")
-    .tag_form(Tag.보조용언, "지")
-    .msg("'나아지다'의 오타가 아닌가요?")
-    .build(),
+    # 뭘 표현하려고 했는지 모르겠음. 오탐이 너무 많아서 주석 처리
+    # *rule()
+    # .tag_form(Tag.형용사규칙활용, "낫")
+    # .tag_form(Tag.연결어미, "어")
+    # .tag_form(Tag.보조용언, "지")
+    # .msg("'나아지다'의 오타가 아닌가요?")
+    # .build(),
 
     *rule()
     .tag_form(Tag.동사, "본뜨")

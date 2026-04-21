@@ -5,7 +5,7 @@ import re
 import warnings
 
 from korean_spell_checker.models.spell_checker_classes import *
-from korean_spell_checker.models.interface import SpellErrorType, Tag
+from korean_spell_checker.models.interface import SpellErrorType
 from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
 
 ErrorMessage: TypeAlias = str
@@ -107,7 +107,7 @@ class _RuleStepData:
         self.is_context: bool = False
         
     def __repr__(self):
-        return f"_RuleStepData(conditions={self.conditions}, spacing_rule={self.spacing_rule}, is_optional={self.is_optional})"
+        return f"_RuleStepData(conditions={self.conditions}, spacing_rule={self.spacing_rule}, is_optional={self.is_optional}, is_context={self.is_context})"
 
 class RuleBuilder:
     def __init__(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
@@ -153,6 +153,10 @@ class RuleBuilder:
     
     def first(self):
         self.steps.append(_RuleStepData([FirstTokenCondition()]))
+        return self
+    
+    def length(self, n: int):
+        self.steps.append(_RuleStepData([LengthCondition(length=n)]))
         return self
 
     def _set_space(self, spacing_rule: SpacingRule):
@@ -207,10 +211,8 @@ class RuleBuilder:
         self.message = input_msg
         return self
     
-    def errtype(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
-        if self.error_type == SpellErrorType.NOT_SET:
-            raise ValueError("Error type has not been set.")
-        
+    def errtype(self, error_type: SpellErrorType):
+        # init에서 설정하고 있지만 중간에 개별적으로 바꾸고 싶을 경우를 위해 메서드 준비
         self.error_type = error_type
         return self
 
@@ -227,24 +229,27 @@ class RuleBuilder:
         self.steps.append(_RuleStepData([NotCondition(_resolve_to_condition(condition))]))
         return self
 
-    def build(self) -> list[KoSpellRules]:
-        if self.message is None:
-            raise ValueError(f"Error message must be set using msg().\nconditions: {self.steps}")
-        if self.error_type is None:
-            raise ValueError(f"Error type has not be set. use errtype() to set error's type.\nconditions: {self.steps}")
+    def _validate_buildable(self):
         if not self.steps:
             raise ValueError(f"At least one condition must be added.\nconditions: {self.steps}")
+        if self.message is None:
+            raise ValueError(f"Error message must be set using msg().\nconditions: {self.steps}")
+        if self.error_type == SpellErrorType.NOT_SET:
+            raise ValueError(f"Error type has not be set. use errtype() to set error's type.\nconditions: {self.steps}")
+        if not any(not s.is_context for s in self.steps):
+            raise ValueError(f"At least one non-context condition must be added.\nconditions: {self.steps}")
 
-        condition_lists = [step.conditions for step in self.steps]
+    def build(self) -> list[KoSpellRules]:
+        self._validate_buildable()
 
         results: list[KoSpellRules] = []
-        for combo in product(*condition_lists):
+        for combo in product(*(step.conditions for step in self.steps)):
             rule_steps: RuleSteps = [
                 (cond, step.spacing_rule, step.is_optional, step.is_context)
                 for cond, step in zip(combo, self.steps)
             ]
             results.append((rule_steps, _resolve_msg(self.message, combo), self.error_type))
-            
+
         return results
 
 def tag(t: str) -> TagCondition:
