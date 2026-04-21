@@ -240,7 +240,7 @@ class SpellChecker:
                     current_node, idxs = bos_queue.popleft()
                     start_idx, end_idx = idxs
 
-                    for trans in current_node._all_transitions:
+                    for trans in current_node.fallback_transitions:
                         if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY:
                             continue
                         
