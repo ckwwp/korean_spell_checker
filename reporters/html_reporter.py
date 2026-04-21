@@ -58,6 +58,7 @@ def highlight_text(original_text: str, matches: list[SpellError]) -> str:
         if start >= len(original_text):
             continue
 
+        end -= 1
         end = min(end, len(original_text) - 1)
 
         # 겹치는 구간은 스킵
