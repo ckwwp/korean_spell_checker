@@ -13,6 +13,62 @@ RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]
 KoSpellRules: TypeAlias = tuple[RuleSteps, ErrorMessage, SpellErrorType]
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
 
+class MessageToken():
+    def __init__(self, type: str, string: str):
+        self.type: str = type
+        self.string: str = string
+    
+    def __repr__(self):
+        return f"MessageToken({self.type}: '{self.string}')"
+    
+class MessageParser:
+    def __init__(self):
+        self.parens = {"(": "LPAREN", ")": "RPAREN", "{": "LBRAKET", "}": "RBRAKET"}
+        self.methods = {"merge": "MERGE"}
+        self.tags = {"tokenform": "TFORM", "batchimremovedform": "BREMOVEDFORM", "batchimreplacedform": "BREPLACEDFORM", "dform": "DYNAMIC_FORM"}
+    
+    def tokenize(self, string: str) -> list[MessageToken]:            
+        if string == "":
+            return []
+        
+        tokens = []
+        i = 0
+        temp_strings = ""
+        
+        def _make_string_token():
+            nonlocal temp_strings
+            if temp_strings == "":
+                return
+            tokens.append(MessageToken("STRING", temp_strings))
+            temp_strings = ""
+        
+        while i < len(string):            
+            if string[i].isalpha():                
+                _make_string_token()
+                start = i
+                while i < len(string) and string[i] not in self.parens:
+                    i += 1
+                alphas = string[start:i]
+                if alphas in self.methods.keys():
+                    tokens.append(MessageToken(self.methods[alphas], alphas))
+                elif alphas in self.tags.keys():
+                    tokens.append(MessageToken(self.tags[alphas], alphas))
+                else:
+                    tokens.append(MessageToken("STRING", alphas))
+                continue
+            
+            elif string[i] in self.parens.keys():
+                _make_string_token()
+                tokens.append(MessageToken(self.parens[string[i]], string[i]))
+            else:
+                temp_strings += string[i]
+            i += 1
+        return tokens
+    
+parser = MessageParser()
+print(parser.tokenize("동사 활용이 잘못되었습니다. '{batchimremovedform[0]}셨다, {batchimremovedform[0]}신' 등이 올바른 표현입니다."))
+        
+
 # {form} / {form[N]} / {조사a,조사b} 플레이스홀더 처리
 _TEMPLATE_PATTERN = re.compile(
     r'\{(form|batchimremovedform)(?:\[(-?\d+)\])?\}'
