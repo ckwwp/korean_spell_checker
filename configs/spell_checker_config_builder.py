@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from korean_spell_checker.models.spell_checker_classes import *
 from korean_spell_checker.models.interface import SpellErrorType, Tag, TagGroup
 from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
-from korean_spell_checker.configs.spell_checker_confing_builder_parser import MessageTokenizer, MessageParser, TokenType, TagNode, TextNode, MethodNode, QuotedNode, TupleNode, MESSAGE_METHODS
+from korean_spell_checker.configs.spell_checker_config_builder_parser import MessageTokenizer, MessageParser, TokenType, TagNode, TextNode, MethodNode, QuotedNode, TupleNode, MESSAGE_METHODS
 
 ErrorMessage: TypeAlias = str
 RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]

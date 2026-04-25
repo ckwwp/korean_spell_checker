@@ -326,14 +326,3 @@ class MessageParser:
                 nodes.append(TextNode(value=text))
         
         return nodes
-
-if __name__ == "__main__":
-    tokenizer = MessageTokenizer()
-    parser = MessageParser()
-
-    target = 'merge(("동사", {dform[0]}), ("잠그", {dform[1]}))은 잘못된 표현입니다.'
-
-    tokens = tokenizer.tokenize(target)
-    ast = parser.parse(tokens)
-    for node in ast:
-        print(node)
