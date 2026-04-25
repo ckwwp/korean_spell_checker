@@ -177,7 +177,9 @@ class TagGroup:
         Tag.이모지
         }
     전부 = set(Tag)
-    
+
+TAG_NAMES = {i.name for i in Tag}
+
 class KoToken(Protocol):
     """한국어 토큰 인터페이스.
 
