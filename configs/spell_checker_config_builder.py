@@ -1,80 +1,55 @@
-from typing import TypeAlias
+from typing import TypeAlias, Callable
 from itertools import product
 from dataclasses import dataclass
-import re
 import warnings
+from abc import ABC, abstractmethod
 
 from korean_spell_checker.models.spell_checker_classes import *
-from korean_spell_checker.models.interface import SpellErrorType
+from korean_spell_checker.models.interface import SpellErrorType, Tag, TagGroup
 from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
+from korean_spell_checker.configs.spell_checker_confing_builder_parser import MessageTokenizer, MessageParser, TokenType, TagNode, TextNode, MethodNode, QuotedNode, TupleNode, MESSAGE_METHODS
 
 ErrorMessage: TypeAlias = str
 RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]
-KoSpellRules: TypeAlias = tuple[RuleSteps, ErrorMessage, SpellErrorType]
+KoSpellRules: TypeAlias = tuple[RuleSteps, "CompiledMessage", SpellErrorType]
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
+MessagePart: TypeAlias = str | Callable[[list], str]
 
-class MessageToken():
-    def __init__(self, type: str, string: str):
-        self.type: str = type
-        self.string: str = string
-    
-    def __repr__(self):
-        return f"MessageToken({self.type}: '{self.string}')"
-    
-class MessageParser:
-    def __init__(self):
-        self.parens = {"(": "LPAREN", ")": "RPAREN", "{": "LBRAKET", "}": "RBRAKET"}
-        self.methods = {"merge": "MERGE"}
-        self.tags = {"tokenform": "TFORM", "batchimremovedform": "BREMOVEDFORM", "batchimreplacedform": "BREPLACEDFORM", "dform": "DYNAMIC_FORM"}
-    
-    def tokenize(self, string: str) -> list[MessageToken]:            
-        if string == "":
-            return []
-        
-        tokens = []
-        i = 0
-        temp_strings = ""
-        
-        def _make_string_token():
-            nonlocal temp_strings
-            if temp_strings == "":
-                return
-            tokens.append(MessageToken("STRING", temp_strings))
-            temp_strings = ""
-        
-        while i < len(string):            
-            if string[i].isalpha():                
-                _make_string_token()
-                start = i
-                while i < len(string) and string[i] not in self.parens:
-                    i += 1
-                alphas = string[start:i]
-                if alphas in self.methods.keys():
-                    tokens.append(MessageToken(self.methods[alphas], alphas))
-                elif alphas in self.tags.keys():
-                    tokens.append(MessageToken(self.tags[alphas], alphas))
-                else:
-                    tokens.append(MessageToken("STRING", alphas))
-                continue
-            
-            elif string[i] in self.parens.keys():
-                _make_string_token()
-                tokens.append(MessageToken(self.parens[string[i]], string[i]))
-            else:
-                temp_strings += string[i]
-            i += 1
-        return tokens
-    
+class _DynamicPart:
+    __slots__ = ('_fn', '_desc')
+
+    def __init__(self, fn: Callable[[list], str], desc: str):
+        self._fn = fn
+        self._desc = desc
+
+    def __call__(self, tokens: list) -> str:
+        return self._fn(tokens)
+
+    def __repr__(self) -> str:
+        return f"<{self._desc}>"
+
+class CompiledMessage:
+    def __init__(self, parts: list[MessagePart]):
+        self._parts = parts
+
+    def __repr__(self) -> str:
+        parts_repr = ", ".join(repr(p) for p in self._parts)
+        return f"CompiledMessage([{parts_repr}])"
+
+    def render(self, tokens: list) -> str:
+        return "".join(
+            part if isinstance(part, str) else part(tokens)
+            for part in self._parts
+        )
+
+tokenizer = MessageTokenizer()
 parser = MessageParser()
-print(parser.tokenize("동사 활용이 잘못되었습니다. '{batchimremovedform[0]}셨다, {batchimremovedform[0]}신' 등이 올바른 표현입니다."))
-        
 
-# {form} / {form[N]} / {조사a,조사b} 플레이스홀더 처리
-_TEMPLATE_PATTERN = re.compile(
-    r'\{(form|batchimremovedform)(?:\[(-?\d+)\])?\}'
-    r'|\{(batchimreplacedform)(?:\[(-?\d+)\])?,([ㄱ-ㅎ])\}'
-    r'|\{([^{},\[\]]+),([^{},\[\]]+)\}'
-)
+def _last_hangul(s: str) -> str:
+    for ch in reversed(s):
+        if '가' <= ch <= '힣':
+            return ch
+    return ""
 
 def _select_josa(a: str, b: str, last_char: str) -> str:
     """
@@ -90,61 +65,122 @@ def _select_josa(a: str, b: str, last_char: str) -> str:
         return b
     return a
 
-def _resolve_msg(template: str, combo: tuple) -> str:
-    """
-    메시지 템플릿의 플레이스홀더를 combo의 form 값으로 치환.
+def _merge_strings(parts: list[MessagePart]) -> list[MessagePart]:
+    merged: list[MessagePart] = []
+    for part in parts:
+        if merged and isinstance(merged[-1], str) and isinstance(part, str):
+            merged[-1] += part
+        else:
+            merged.append(part)
+    return merged
 
-    - {form}    → combo의 마지막 TagAndFormCondition / FormCondition의 form
-    - {form[N]} → N번째 TagAndFormCondition / FormCondition의 form (음수 인덱스 지원)
-    - {batchimremovedform[N]} → 받침 제거된 form
-    - {batchimreplacedform[N],A} → 받침을 A로 변경한 form
-    - {a,b}     → 직전에 치환된 form의 받침 여부로 a/b 선택
-    조사 마커는 직전 {form} 기준으로 결정되며, {form} 없이 단독 사용 시 마지막 form 기준.
-    """
-    if '{' not in template:
-        return template
+def compile_message(parsed_msg: list, combo: tuple[Condition, ...], source: str = "") -> CompiledMessage:
     form_vals = [c.form for c in combo if isinstance(c, (TagAndFormCondition, FormCondition))]
-    if not form_vals:
-        return template
 
-    current_last_char = form_vals[-1][-1] if form_vals[-1] else ""
+    result: list[MessagePart] = []
+    for node in parsed_msg:
+        match node:
+            case TextNode():
+                result.append(node.value)
+            case TagNode(name="form", index=i):
+                if i >= len(form_vals):
+                    msg = (
+                        f"{{form[{i}]}} is out of range: "
+                        f"only {len(form_vals)} form condition(s) exist (indices 0–{len(form_vals)-1})"
+                    )
+                    if source:
+                        msg += f"\n  in: {source}"
+                    raise IndexError(msg)
+                result.append(form_vals[i])
+            case TagNode(name="dform", index=i):
+                result.append(_DynamicPart(lambda tokens, i=i: tokens[i].form, f"dform[{i}]"))
+            case TagNode(name="dtag", index=i):
+                result.append(_DynamicPart(lambda tokens, i=i: tokens[i].form, f"dtag[{i}]"))
+            case QuotedNode():
+                result.append(node.value)
+            case MethodNode():
+                result.append(_compile_method(node, form_vals, result, source))
 
-    def replacer(m: re.Match) -> str:
-        nonlocal current_last_char
+    return CompiledMessage(_merge_strings(result))
 
-        if m.group(1) is not None:                            # {form} / {batchimremovedform}
-            keyword = m.group(1)
-            idx_str = m.group(2)
+def _compile_method(node: MethodNode, form_vals: list[str], result: list[MessagePart], source: str = "") -> MessagePart:
+    if node.name == "batchim":
+        return _compile_batchim(node, form_vals, result, source)
+
+    method_spec = MESSAGE_METHODS[node.name]
+    compiled_args = [
+        tuple(_compile_tuple_item(item, form_vals) for item in arg.items)
+        for arg in node.args
+    ]
+
+    method_spec.validate_func(node.args)
+
+    if any(callable(part) for arg in compiled_args for part in arg):
+        def dynamic(tokens, args=compiled_args, fn=method_spec.func):
+            resolved = [
+                tuple(p if isinstance(p, str) else p(tokens) for p in arg)
+                for arg in args
+            ]
+            return fn(resolved)
+        desc_args = ", ".join(
+            "(" + ", ".join(repr(p) for p in arg) + ")"
+            for arg in compiled_args
+        )
+        return _DynamicPart(dynamic, f"{node.name}({desc_args})")
+
+    return method_spec.func(compiled_args)  # type: ignore[misc]
+
+def _compile_batchim(node: MethodNode, form_vals: list[str], result: list[MessagePart], source: str = "") -> MessagePart:
+    if not result:
+        msg = "batchim() requires a preceding expression in the message"
+        if source:
+            msg += f"\n  in: {source}"
+        raise ValueError(msg)
+
+    MESSAGE_METHODS["batchim"].validate_func(node.args)
+
+    a: str = node.args[0].items[0].value  # 받침 있음 (e.g. "으로")
+    b: str = node.args[0].items[1].value  # 받침 없음 (e.g. "로")
+
+    # 역방향으로 스캔: 한글 없는 정적 파트는 건너뜀, 동적 파트를 만나면 런타임으로 전환
+    for part in reversed(result):
+        if isinstance(part, str):
+            ch = _last_hangul(part)
+            if ch:
+                return _select_josa(a, b, ch)
+        else:  # _DynamicPart — 런타임에 스캔
+            preceding = list(result)
+            def dynamic(tokens, a=a, b=b, parts=preceding):
+                for p in reversed(parts):
+                    if isinstance(p, str):
+                        ch = _last_hangul(p)
+                        if ch:
+                            return _select_josa(a, b, ch)
+                    else:
+                        ch = _last_hangul(p(tokens))
+                        if ch:
+                            return _select_josa(a, b, ch)
+                return _select_josa(a, b, "")
+            return _DynamicPart(dynamic, f"batchim({a!r},{b!r})")
+
+    return _select_josa(a, b, "")
+
+def _compile_tuple_item(item, form_vals: list[str]) -> MessagePart:
+    match item:
+        case QuotedNode():
             try:
-                val = form_vals[-1] if idx_str is None else form_vals[int(idx_str)]
-            except IndexError:
-                return m.group(0)
-
-            if keyword == 'batchimremovedform' and val:
-                val = val[:-1] + remove_batchim(val[-1])
-
-            current_last_char = val[-1] if val else ""
-            return val
-
-        elif m.group(3) is not None:                          # {batchimreplacedform[N],ㅈ}
-            idx_str = m.group(4)
-            jamo = m.group(5)
-            try:
-                val = form_vals[-1] if idx_str is None else form_vals[int(idx_str)]
-            except IndexError:
-                return m.group(0)
-
-            if val:
-                val = val[:-1] + replace_batchim(val[-1], jamo)
-
-            current_last_char = val[-1] if val else ""
-            return val
-
-        else:                                                 # {a,b} 조사
-            return _select_josa(m.group(6), m.group(7), current_last_char)
-
-    return _TEMPLATE_PATTERN.sub(replacer, template)
-
+                return Tag[item.value].value
+            except KeyError:
+                return item.value
+        case TagNode(name="form", index=i):
+            return form_vals[i]
+        case TagNode(name="dform", index=i):
+            return _DynamicPart(lambda tokens, i=i: tokens[i].form, f"dform[{i}]")
+        case TagNode(name="dtag", index=i):
+            return _DynamicPart(lambda tokens, i=i: tokens[i].tag, f"dtag[{i}]")
+        case default:
+            raise ValueError(default)
+                    
 @dataclass(frozen=True, slots=True)
 class _TagSet:
     """AND 내부에서 여러 태그를 묶는 용도. Condition이 아님."""
@@ -168,7 +204,7 @@ class _RuleStepData:
 class RuleBuilder:
     def __init__(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
         self.steps: list[_RuleStepData] = []
-        self.message = None
+        self.message: str
         self.error_type: SpellErrorType = error_type
 
     def tag(self, tag: str):
@@ -258,11 +294,9 @@ class RuleBuilder:
         
         {form}으로 form 조건을 지정할 수 있음.
         
-        {form[0]}: 0번째 form 조건
-        {batchimremovedform[0]}: 0번째 form 조건에서 마지막 글자의 받침을 뺀 str
-        {batchimreplacedform[0],A}: 0번째 form 조건의 마지막 받침을 A로 바꾼 str
+        {form[0]}: 0번째 form 조건(인덱스 필수)
+        {}
         
-        {을,를} 리터럴로 조사 표현 가능.
         """
         self.message = input_msg
         return self
@@ -299,12 +333,15 @@ class RuleBuilder:
         self._validate_buildable()
 
         results: list[KoSpellRules] = []
+        parsed_msg = parser.parse(tokenizer.tokenize(self.message), source=self.message)
+        
         for combo in product(*(step.conditions for step in self.steps)):
             rule_steps: RuleSteps = [
                 (cond, step.spacing_rule, step.is_optional, step.is_context)
                 for cond, step in zip(combo, self.steps)
             ]
-            results.append((rule_steps, _resolve_msg(self.message, combo), self.error_type))
+            compiled_msg = compile_message(parsed_msg, combo, source=self.message)
+            results.append((rule_steps, compiled_msg, self.error_type))
 
         return results
 
@@ -409,3 +446,7 @@ def AND(*params: AndParam) -> Condition:
     if len(optimized) == 1:
         return optimized[0]
     return OrCondition(conditions=tuple(optimized))
+
+if __name__ == "__main__":
+    rule = RuleBuilder(SpellErrorType.TEST)
+    print(rule.form("ㅇㅇ").msg('{dtag[0]}').build())

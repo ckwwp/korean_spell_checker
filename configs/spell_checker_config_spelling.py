@@ -580,31 +580,33 @@ _MIF = [
     *rule()
     .AND(tag(Tag.동사), forms(_ㄹ동사들))
     .tag_form(Tag.선어말어미, "으시")
-    .msg("동사 활용이 잘못되었습니다. '{batchimremovedform[0]}셨다, {batchimremovedform[0]}신' 등이 올바른 표현입니다.")
+    .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, {dtag[0]}), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
     .AND(tag(Tag.동사), forms(_ㄹ동사들))
     .tag_form(Tag.관형사형전성어미, "은")
-    .msg("동사 활용이 잘못되었습니다. '{batchimreplacedform[0],ㄴ}'이 올바른 표현입니다.")
+    .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, \"동사\"), (\"ᆫ\", \"관형사형전성어미\"))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
     .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
     .tag_form(Tag.선어말어미, "으시")
-    .msg("형용사 활용이 잘못되었습니다. '{batchimremovedform[0]}셨다, {batchimremovedform[0]}신' 등이 올바른 표현입니다.")
+    .any()
+    .context()
+    .msg("형용사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, {dtag[0]}), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
     .AND(tag(Tag.동사), forms(_ㄹ동사들))
     .tag_form(Tag.연결어미, "으면")
-    .msg("동사 활용이 잘못되었습니다. '{form[0]}면'이 올바른 표현입니다.")
+    .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, {dtag[0]}), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
     .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
     .tag_form(Tag.관형사형전성어미, "은")
-    .msg("형용사 활용이 잘못되었습니다. '{batchimreplacedform[0],ㄴ}'이 올바른 표현입니다.")
+    .msg("형용사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, \"형용사\"), (\"ᆫ\", \"관형사형전성어미\"))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()

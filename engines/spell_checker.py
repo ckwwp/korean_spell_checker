@@ -6,7 +6,7 @@ from typing import Iterator
 from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType
 from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition, NotCondition, BatchimCondition, AnyBatchimCondition
 from korean_spell_checker.utils.hangul import get_jongseong, is_jamo
-from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules
+from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules, CompiledMessage
 
 @dataclass(slots=True)
 class _EnrichedToken:
@@ -31,8 +31,8 @@ class _RuleNode:
 
     def __repr__(self):
         n = len(self._all_transitions)
-        out = self.output_message or "None"
-        return f"_RuleNode(transitions={n}, output={out!r})"
+        out = "CompiledMessage" if self.output_message else "None"
+        return f"_RuleNode(transitions={n}, output={out})"
 
     def __init__(self):
         self.tag_transitions: dict[str, list[_Transition]] = {}
@@ -46,7 +46,7 @@ class _RuleNode:
         self._all_transitions: list[_Transition] = []
         self._optional_closure: set[_RuleNode] | None = None
 
-        self.output_message: str | None = None
+        self.output_message: CompiledMessage | None = None
         self.error_type: SpellErrorType = SpellErrorType.NOT_SET
         self.output_path: str | None = None
         
@@ -269,7 +269,7 @@ class SpellChecker:
                 if node.output_message and start_idx < i:
                     self._update_shortest_match(
                         current_step_errors,
-                        node.output_message,
+                        node.output_message.render(enriched_tokens[start_idx:end_idx+1]),
                         node.error_type,
                         tokens[start_idx].start,
                         tokens[end_idx].end,
@@ -350,7 +350,7 @@ class SpellChecker:
                 if node.output_message:
                     self._update_shortest_match(
                         storage=final_step_errors,
-                        msg=node.output_message,
+                        msg=node.output_message.render(enriched_tokens[start_idx:end_idx+1]),
                         error_type=node.error_type,
                         start=tokens[start_idx].start,
                         end=tokens[end_idx].end,
