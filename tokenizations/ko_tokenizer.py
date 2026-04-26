@@ -39,7 +39,6 @@ class KoTokenizer(Kiwi):
                 self.add_user_word(word, Tag.일반명사)        
 
     def tokenize(self, *args, **kwargs):
-        kwargs.setdefault('compatible_jamo', True)
         return super().tokenize(*args, **kwargs)
 
     @property

@@ -604,7 +604,7 @@ class Api:
         if err := self._ensure_ready():
             return err
         try:
-            raw = self._tkn.tokenize(text, compatible_jamo=False)
+            raw = self._tkn.tokenize(text)
             if not raw:
                 return {"tokens": []}
             tokens = []
