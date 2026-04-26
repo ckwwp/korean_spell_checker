@@ -199,6 +199,7 @@ class SpellChecker:
         루프 종료 후 남은 커서에 대해 optional/NOT 전이를 엡실론으로 확장해 출력 수집 (EOF epsilon).
         """
         # 여러 번 실행되는 함수라 대부분을 인라인으로 작성.
+        
         enriched_tokens = [
             _EnrichedToken(
                 form=t.form, tag=t.tag, start=t.start, end=t.end, len=t.len, lemma=t.lemma,
@@ -212,11 +213,12 @@ class SpellChecker:
         expanded_cursors: dict[_RuleNode, tuple[int, int]] = {}
 
         candidates: list[_Transition] = []
+        NOT_STARTED = -1
 
         for i, token in enumerate(enriched_tokens):
             has_space = (token.start - tokens[i-1].end > 0) if i > 0 else False
 
-            active_cursors[self._root] = (-1, i)
+            active_cursors[self._root] = (NOT_STARTED, i)
 
             expanded_cursors.clear()
             
@@ -241,12 +243,12 @@ class SpellChecker:
                     start_idx, end_idx = idxs
 
                     for trans in current_node.fallback_transitions:
-                        if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY:
+                        if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY and trans.is_context:
                             continue
                         
                         target = trans.target_node
                         if target not in expanded_cursors or start_idx > expanded_cursors[target][0]:
-                            if start_idx == -1 and not trans.is_context: # -1: is_context가 아닌 노드에 도달한 적 없는 상태
+                            if start_idx == NOT_STARTED and not trans.is_context:
                                 start_idx = i
                             if not trans.is_context: # end는 마지막으로 본 is_context가 아닌 토큰의 위치이므로 is_context가 False라면 매번 갱신
                                 end_idx = i
@@ -306,7 +308,7 @@ class SpellChecker:
 
                     # context가 아닐 때만 index 갱신 (start_idx/end_idx를 직접 변경하지 않고 임시 변수 사용)
                     if target not in next_cursors or start_idx > next_cursors[target][0]:
-                        new_start = i if (start_idx == -1 and not trans.is_context) else start_idx
+                        new_start = i if (start_idx == NOT_STARTED and not trans.is_context) else start_idx
                         new_end = i if not trans.is_context else end_idx
                         next_cursors[target] = (new_start, new_end)
             
@@ -339,7 +341,7 @@ class SpellChecker:
                 final_expanded[node] = (start_idx, end_idx)
 
                 for trans in node._all_transitions:
-                    is_not_any = isinstance(trans.condition, NotCondition) and trans.spacing_rule == SpacingRule.ANY
+                    is_not_any = isinstance(trans.condition, NotCondition) and trans.spacing_rule == SpacingRule.ANY and trans.is_context
                     if trans.is_optional or is_not_any:
                         target = trans.target_node
                         if target not in final_expanded or start_idx > final_expanded[target][0]:
