@@ -45,91 +45,144 @@ HTML = """
 <head>
 <meta charset="UTF-8">
 <style>
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --subtle: #94a3b8;
+    --accent: #4f46e5;
+    --accent-dark: #4338ca;
+    --accent-bg: rgba(79,70,229,0.07);
+    --danger: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-bg: rgba(239,68,68,0.07);
+    --warning: #f59e0b;
+    --warning-dark: #d97706;
+    --warning-bg: rgba(245,158,11,0.09);
+    --success: #10b981;
+    --r-sm: 5px;
+    --r: 8px;
+    --r-lg: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+    --shadow: 0 3px 10px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.05);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Malgun Gothic', sans-serif; font-size: 14px;
-    background: #f5f5f5;
+    font-family: 'Malgun Gothic', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
   }
 
   /* ── 탭 헤더 ── */
   .tab-header {
-    display: flex; background: #3a6fd5; padding: 0 12px;
-    position: sticky; top: 0; z-index: 100;
+    display: flex;
+    background: #1e293b;
+    padding: 0 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 2px;
   }
   .tab-btn {
-    padding: 10px 18px; border: none; background: transparent;
-    color: rgba(255,255,255,0.7); cursor: pointer; font-size: 13px;
-    font-family: inherit; border-bottom: 3px solid transparent;
+    padding: 11px 18px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
     transition: color 0.15s, border-color 0.15s;
+    letter-spacing: 0.01em;
   }
-  .tab-btn:hover { color: white; }
-  .tab-btn.active { color: white; border-bottom-color: white; }
+  .tab-btn:hover { color: rgba(255,255,255,0.85); }
+  .tab-btn.active { color: #fff; border-bottom-color: #818cf8; }
 
   /* ── 탭 컨텐츠 ── */
-  .tab-pane { display: none; padding: 16px; }
+  .tab-pane { display: none; padding: 18px 16px; }
   .tab-pane.active { display: block; }
 
   /* ── 공통 컴포넌트 ── */
-  h2 { margin-bottom: 12px; font-size: 15px; color: #333; }
+  h2 { margin-bottom: 14px; font-size: 15px; font-weight: 600; color: var(--text); }
   textarea {
-    width: 100%; height: 80px; padding: 8px; border: 1px solid #ccc;
-    border-radius: 4px; resize: vertical; font-family: inherit; font-size: 14px;
+    width: 100%; height: 80px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--r);
+    resize: vertical; font-family: inherit; font-size: 14px;
+    background: var(--surface); color: var(--text);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
   }
   .toolbar {
-    display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;
   }
   button {
-    padding: 6px 14px; border: none; border-radius: 4px;
-    cursor: pointer; font-size: 13px; font-family: inherit;
+    padding: 7px 15px; border: none; border-radius: var(--r-sm);
+    cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
   }
-  button:disabled { background: #aaa !important; cursor: not-allowed; }
-  .btn-primary { background: #4a7fe5; color: white; }
-  .btn-primary:not(:disabled):hover { background: #3a6fd5; }
-  .btn-danger  { background: #e55a5a; color: white; }
-  .btn-danger:not(:disabled):hover  { background: #cc4444; }
-  .btn-warning { background: #e5913a; color: white; }
-  .btn-warning:not(:disabled):hover { background: #cc7a2a; }
-  label { display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
-  .status { margin-top: 8px; font-size: 13px; color: #555; min-height: 18px; }
-  .result-area { margin-top: 12px; }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: 0.42; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(79,70,229,0.3); }
+  .btn-primary:not(:disabled):hover { background: var(--accent-dark); box-shadow: 0 2px 8px rgba(79,70,229,0.35); }
+  .btn-danger  { background: var(--danger); color: #fff; box-shadow: 0 1px 3px rgba(239,68,68,0.3); }
+  .btn-danger:not(:disabled):hover  { background: var(--danger-dark); box-shadow: 0 2px 8px rgba(239,68,68,0.35); }
+  .btn-warning { background: var(--warning); color: #fff; box-shadow: 0 1px 3px rgba(245,158,11,0.3); }
+  .btn-warning:not(:disabled):hover { background: var(--warning-dark); box-shadow: 0 2px 8px rgba(245,158,11,0.35); }
+  label {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none; font-size: 13px; color: var(--muted);
+  }
+  label input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+  .status { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
+  .result-area { margin-top: 14px; }
 
   /* ── 토크나이저 테이블 ── */
   table.token-table {
-    width: 100%; border-collapse: collapse; background: white;
-    border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    width: 100%; border-collapse: collapse; background: var(--surface);
+    border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow);
   }
   table.token-table th {
-    background: #4a7fe5; color: white; padding: 7px 10px;
-    text-align: left; font-size: 13px;
+    background: #1e293b; color: rgba(255,255,255,0.85);
+    padding: 9px 12px; text-align: left; font-size: 12px;
+    font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
   }
-  table.token-table td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+  table.token-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
   table.token-table tr:last-child td { border-bottom: none; }
-  table.token-table tr:hover td { background: #f0f5ff; }
-  .tag   { font-weight: bold; color: #4a7fe5; }
-  .spaced { color: #e55a5a; font-size: 11px; }
+  table.token-table tr:hover td { background: var(--accent-bg); }
+  .tag   { font-weight: 600; color: var(--accent); }
+  .spaced { color: var(--danger); font-size: 11px; font-weight: 500; }
 
   /* ── 맞춤법 검사: 하이라이트 미리보기 ── */
   .spell-preview {
-    margin-top: 12px; padding: 10px 12px; background: white;
-    border: 1px solid #ddd; border-radius: 4px; min-height: 48px;
-    white-space: pre-wrap; word-break: break-word; line-height: 1.7;
-    font-size: 14px; font-family: inherit;
+    margin-top: 12px; padding: 12px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--r); min-height: 52px;
+    white-space: pre-wrap; word-break: break-word; line-height: 1.8;
+    font-size: 14px; font-family: inherit; box-shadow: var(--shadow-sm);
   }
   .spell-preview:empty::before {
     content: '검사 결과가 여기에 표시됩니다.';
-    color: #bbb;
+    color: var(--subtle);
   }
   .error-highlight {
     position: relative;
     text-decoration: underline;
     text-decoration-color: #ef4444;
     text-decoration-style: wavy;
-    text-decoration-thickness: 1px;
+    text-decoration-thickness: 1.5px;
     color: #dc2626;
     font-weight: 600;
-    background: rgba(239,68,68,0.1);
+    background: rgba(239,68,68,0.09);
     border-radius: 3px;
     cursor: help;
+    padding: 0 1px;
   }
   .error-highlight::before {
     content: attr(data-error-msg);
@@ -137,19 +190,19 @@ HTML = """
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-bottom: 8px;
-    background: white;
-    color: #333;
+    margin-bottom: 10px;
+    background: #1e293b;
+    color: #e2e8f0;
     padding: 8px 12px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
     white-space: pre-wrap;
     word-wrap: break-word;
     min-width: 200px;
     max-width: 320px;
     font-size: 12px;
     font-weight: 400;
-    line-height: 1.5;
+    line-height: 1.6;
     opacity: 0; visibility: hidden;
     transition: opacity 0.15s, visibility 0.15s;
     z-index: 9999; pointer-events: none;
@@ -160,10 +213,9 @@ HTML = """
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-bottom: 2px;
+    margin-bottom: 4px;
     border: 5px solid transparent;
-    border-top-color: white;
-    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+    border-top-color: #1e293b;
     opacity: 0; visibility: hidden;
     transition: opacity 0.15s, visibility 0.15s;
     z-index: 9999; pointer-events: none;
@@ -173,88 +225,89 @@ HTML = """
 
   /* ── 맞춤법 검사: 에러 목록 테이블 ── */
   table.error-table {
-    width: 100%; border-collapse: collapse; background: white;
-    border-radius: 4px; overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 10px;
+    width: 100%; border-collapse: collapse; background: var(--surface);
+    border-radius: var(--r); overflow: hidden;
+    box-shadow: var(--shadow-sm); margin-top: 12px;
   }
   table.error-table th {
-    background: #e55a5a; color: white; padding: 6px 10px;
-    text-align: left; font-size: 12px;
+    background: var(--danger); color: #fff; padding: 8px 12px;
+    text-align: left; font-size: 12px; font-weight: 500; letter-spacing: 0.03em;
   }
   table.error-table td {
-    padding: 5px 10px; border-bottom: 1px solid #eee;
+    padding: 7px 12px; border-bottom: 1px solid var(--border);
     font-size: 12px; vertical-align: top;
   }
   table.error-table tr:last-child td { border-bottom: none; }
-  table.error-table tr:hover td { background: #fff5f5; }
-  .err-type { font-weight: bold; color: #e55a5a; white-space: nowrap; }
-  .err-path { font-size: 11px; color: #999; margin-top: 2px; font-family: monospace; }
-  .no-errors { color: #22a355; font-size: 13px; margin-top: 8px; }
+  table.error-table tr:hover td { background: var(--danger-bg); }
+  .err-type { font-weight: 600; color: var(--danger); white-space: nowrap; }
+  .err-path { font-size: 11px; color: var(--subtle); margin-top: 3px; font-family: monospace; }
+  .no-errors { color: var(--success); font-size: 13px; font-weight: 500; margin-top: 10px; }
 
   /* ── 사전 검색 ── */
   .dict-sticky-search {
     position: sticky;
     top: 40px;
-    background: #f5f5f5;
+    background: var(--bg);
     margin: 0 -16px;
-    padding: 0 16px 8px;
+    padding: 0 16px 10px;
     z-index: 50;
   }
-  .dict-search-row {
-    display: flex; gap: 8px;
-  }
-  .dict-regex-label {
-    margin-top: 6px; font-size: 13px; color: #555;
-  }
+  .dict-search-row { display: flex; gap: 8px; }
+  .dict-regex-label { margin-top: 7px; }
   .dict-input {
-    flex: 1; padding: 6px 10px; border: 1px solid #ccc;
-    border-radius: 4px; font-size: 14px; font-family: inherit;
+    flex: 1; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--r-sm); font-size: 14px; font-family: inherit;
+    background: var(--surface); color: var(--text);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .dict-input:focus { outline: none; border-color: #4a7fe5; box-shadow: 0 0 0 2px rgba(74,127,229,0.2); }
+  .dict-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
   .dict-card {
-    background: white; border: 1px solid #ddd; border-radius: 6px;
-    margin-top: 10px; overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); margin-top: 10px; overflow: hidden;
+    box-shadow: var(--shadow-sm); transition: box-shadow 0.15s;
   }
+  .dict-card:hover { box-shadow: var(--shadow); }
   .dict-card-header {
     display: flex; align-items: baseline; gap: 8px;
-    padding: 8px 12px; background: #f0f5ff; border-bottom: 1px solid #ddd;
+    padding: 10px 14px; background: var(--accent-bg); border-bottom: 1px solid var(--border);
   }
-  .dict-word { font-size: 16px; font-weight: bold; color: #222; }
+  .dict-word { font-size: 16px; font-weight: 700; color: var(--text); }
   .dict-pos-badge {
-    font-size: 11px; padding: 2px 7px; border-radius: 10px;
-    background: #4a7fe5; color: white; white-space: nowrap;
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent); color: #fff; white-space: nowrap; font-weight: 500;
   }
-  .dict-card-body { padding: 10px 14px; }
+  .dict-card-body { padding: 12px 14px; }
   .dict-sense {
-    margin-bottom: 10px; padding-bottom: 10px;
-    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
   }
   .dict-sense:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-  .dict-sense-num { font-size: 12px; color: #999; margin-right: 4px; }
-  .dict-definition { font-size: 13px; color: #333; line-height: 1.6; }
+  .dict-sense-num { font-size: 12px; color: var(--subtle); margin-right: 4px; }
+  .dict-definition { font-size: 13px; color: var(--text); line-height: 1.6; }
   .dict-examples { margin-top: 5px; padding-left: 12px; }
-  .dict-example { font-size: 12px; color: #666; line-height: 1.6; }
-  .dict-example::before { content: '• '; color: #aaa; }
-  .dict-source { font-size: 11px; color: #aaa; font-style: italic; margin-left: 4px; }
-  .dict-no-result { color: #888; font-size: 13px; margin-top: 12px; }
-  .dict-not-loaded { color: #e55a5a; font-size: 13px; margin-top: 12px; }
+  .dict-example { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .dict-example::before { content: '• '; color: var(--subtle); }
+  .dict-source { font-size: 11px; color: var(--subtle); font-style: italic; margin-left: 4px; }
+  .dict-no-result { color: var(--muted); font-size: 13px; margin-top: 12px; }
+  .dict-not-loaded { color: var(--danger); font-size: 13px; margin-top: 12px; }
 
   /* ── 유사어 제안 ── */
   .dict-suggestion-box {
-    margin-top: 12px; padding: 10px 12px; background: #fffbea;
-    border: 1px solid #f5e04a; border-radius: 6px;
+    margin-top: 12px; padding: 12px 14px; background: var(--warning-bg);
+    border: 1px solid rgba(245,158,11,0.25); border-radius: var(--r);
     display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
   }
   .dict-suggestion-label {
-    font-size: 13px; color: #7a6a00; font-weight: bold; white-space: nowrap;
+    font-size: 13px; color: var(--warning-dark); font-weight: 600; white-space: nowrap;
   }
   .dict-suggestion-chip {
-    padding: 4px 12px; border: 1px solid #d4b800; border-radius: 14px;
-    background: white; color: #3a2e00; font-size: 13px; cursor: pointer;
-    font-family: inherit; transition: background 0.12s;
+    padding: 4px 12px; border: 1px solid rgba(245,158,11,0.4); border-radius: 999px;
+    background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer;
+    font-family: inherit; font-weight: 500; transition: background 0.12s, border-color 0.12s;
   }
-  .dict-suggestion-chip:hover { background: #fffade; border-color: #b89800; }
+  .dict-suggestion-chip:hover { background: var(--warning-bg); border-color: var(--warning); }
 </style>
 </head>
 <body>
