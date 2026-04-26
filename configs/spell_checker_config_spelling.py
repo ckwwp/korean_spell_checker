@@ -31,9 +31,9 @@ _CERTAINS: list[KoSpellRules] = [
     .build(),
 
     *rule()
-    .batchim("ㄹ")
+    .batchim("ᆯ")
     .AND(tags(TagGroup.조사), form("으로"))
-    .msg("받침이 ㄹ인 단어에는 '로'를 써야 합니다.")
+    .msg("받침이 ᆯ인 단어에는 '로'를 써야 합니다.")
     .build(),
 
     *rule()
@@ -56,9 +56,9 @@ _CERTAINS: list[KoSpellRules] = [
     .build(),
 
     *rule()
-    .batchim("ㄴ")
+    .batchim("ᆫ")
     .tag_form(Tag.명사파생접미사, "률")
-    .msg("ㄴ받침으로 끝나는 명사에는 '율'을 사용해야 합니다.")
+    .msg("ᆫ받침으로 끝나는 명사에는 '율'을 사용해야 합니다.")
     .build(),
     
     *rule()
@@ -68,14 +68,14 @@ _CERTAINS: list[KoSpellRules] = [
     .build(),
     
     *rule()
-    .AND(any_batchim(), NOT(batchim("ㄴ")))
+    .AND(any_batchim(), NOT(batchim("ᆫ")))
     .tag_form(Tag.명사파생접미사, "율")
-    .msg("ㄴ받침 이외의 받침 있는 명사에는 '률'을 사용해야 합니다.")
+    .msg("ᆫ받침 이외의 받침 있는 명사에는 '률'을 사용해야 합니다.")
     .build(),
 
     *rule()
     .tag_form(Tag.형용사파생접미사규칙활용, "스럽")
-    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.관형사형전성어미, "ᆫ")
     .msg("'~스러운'을 '스런'으로 줄여 쓸 수 없습니다.")
     .build(),
     
@@ -218,7 +218,7 @@ _OM = [
     *rule()
     .tag_form(Tag.일반명사, "가능")
     .tag_form(Tag.형용사파생접미사, "하")
-    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.관형사형전성어미, "ᆫ")
     .tag(Tag.일반부사)
     .msg("'가능한 한~'으로 써야 합니다.")
     .build(),
@@ -245,7 +245,7 @@ _ADD = [
     .build(),
 
     *rule()
-    .tag_form(Tag.연결어미, "ㄹ려고")
+    .tag_form(Tag.연결어미, "ᆯ려고")
     .msg("'~려고'가 올바른 표현입니다.")
     .build(),
 
@@ -262,7 +262,8 @@ _ADD = [
 
     *rule()
     .tag_form(Tag.동사, "되뇌이")
-    .msg("'되뇌다'가 올바른 표현입니다. (되뇌이다X 되뇌다O 되뇌여서X 되뇌어서O)")
+    .any()
+    .msg("'merge((\"되뇌\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
 
     *rule()
@@ -311,64 +312,74 @@ _ADD = [
     *rule()
     .tag_form(Tag.일반명사, "열")
     .tag_form(Tag.동사, "띄")
-    .msg("'열띤'이 올바른 표현입니다.")
+    .any()
+    .msg("'merge((\"열띠\", \"형용사\"), ({dform[2]}, {dtag[2]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "잊히")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'잊혀지다'는 이중 피동 표현이므로 '잊히다' '잊힌' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'잊혀지다'는 이중 피동 표현이므로 'merge((\"잊히\", \"동사\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "불리우")
-    .msg("'불리우다'는 이중 피동 표현이므로 '불리다' '불렸다(불리었다)' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'불리우다'는 이중 피동 표현이므로 'merge((\"불리\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "쓰이")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'쓰여지다'는 이중 피동 표현이므로 '쓰여 있다', '쓰인' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'쓰여지다'는 이중 피동 표현이므로 'merge((\"쓰이\", \"동사\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "적히")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'적혀지다'는 이중 피동 표현이므로 '적히다', '적힌' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'적혀지다'는 이중 피동 표현이므로 'merge((\"적히\", \"동사\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "믿기")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'믿겨지다'는 이중 피동 표현이므로 '믿어지다', '믿기다' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'믿겨지다'는 이중 피동 표현이므로 'merge((\"믿\", \"동사\"), (\"어\", \"연결어미\"), (\"지\", \"연결어미\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "짜이")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'짜여지다'는 이중 피동 표현이므로 '짜이다', '짜인' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'짜여지다'는 이중 피동 표현이므로 'merge((\"짜이\", \"동사\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "설레이")
-    .msg("'설레이다'는 이중 피동 표현이므로 '설레다', '설렘' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'설레이다'는 이중 피동 표현이므로 'merge((\"설레\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "덮이")
     .tag_form(Tag.연결어미, "어")
     .tag_form(Tag.보조용언, "지")
-    .msg("'덮여지다'는 이중 피동 표현이므로 '덮이다', '덮인' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'덮여지다'는 이중 피동 표현이므로 'merge((\"덮이\", \"동사\"), ({dform[3]}, {dtag[3]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "씌이")
-    .msg("'씌이다'는 이중 피동 표현이므로 '씌다', '씐' 등으로 쓸 것을 권장합니다.")
+    .any()
+    .msg("'씌이다'는 이중 피동 표현이므로 'merge((\"씌\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 쓸 것을 권장합니다.")
     .build(),
 
     *rule()
@@ -429,8 +440,8 @@ _REP = [
     .build(),
 
     *rule()
-    .AND(tags({Tag.종결어미, Tag.연결어미}), forms({"ㄹ께", "ㄹ께요"}))
-    .msg("'-ㄹ게'로 써야 합니다.")
+    .AND(tags({Tag.종결어미, Tag.연결어미}), forms({"ᆯ께", "ᆯ께요"}))
+    .msg("'-ᆯ게'로 써야 합니다.")
     .build(),
 
     *rule()
@@ -555,7 +566,7 @@ _REP = [
     .build(),
     
     *rule()
-    .tag_form(Tag.관형사형전성어미, "ㄴ")
+    .tag_form(Tag.관형사형전성어미, "ᆫ")
     .tag_form(Tag.의존명사, "냥")
     .msg("'~인 양'이 올바른 표현입니다.")
     .build(),
@@ -572,25 +583,25 @@ _REP = [
     .build(),
 ]
 
-# ㄹ 규칙 활용 관련
-_ㄹ동사들 = {"졸", "썰", "날", "빌", "불", "말", "살", "일", "팔", "깃들"}
-_ㄹ형용사들 = {"거칠", "달", "녹슬"}
+# ᆯ 규칙 활용 관련
+_ᆯ동사들 = {"졸", "썰", "날", "빌", "불", "말", "살", "일", "팔", "깃들"}
+_ᆯ형용사들 = {"거칠", "달", "녹슬"}
 
 _MIF = [
     *rule()
-    .AND(tag(Tag.동사), forms(_ㄹ동사들))
+    .AND(tag(Tag.동사), forms(_ᆯ동사들))
     .tag_form(Tag.선어말어미, "으시")
     .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, {dtag[0]}), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
-    .AND(tag(Tag.동사), forms(_ㄹ동사들))
+    .AND(tag(Tag.동사), forms(_ᆯ동사들))
     .tag_form(Tag.관형사형전성어미, "은")
     .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, \"동사\"), (\"ᆫ\", \"관형사형전성어미\"))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
-    .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
+    .AND(tag(Tag.형용사), forms(_ᆯ형용사들))
     .tag_form(Tag.선어말어미, "으시")
     .any()
     .context()
@@ -598,13 +609,13 @@ _MIF = [
     .build(),
 
     *rule()
-    .AND(tag(Tag.동사), forms(_ㄹ동사들))
+    .AND(tag(Tag.동사), forms(_ᆯ동사들))
     .tag_form(Tag.연결어미, "으면")
     .msg("동사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, {dtag[0]}), ({dform[1]}, {dtag[1]}))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
 
     *rule()
-    .AND(tag(Tag.형용사), forms(_ㄹ형용사들))
+    .AND(tag(Tag.형용사), forms(_ᆯ형용사들))
     .tag_form(Tag.관형사형전성어미, "은")
     .msg("형용사 활용이 잘못되었습니다. 'merge(({dform[0]}, {dtag[0]}), (\"다\", \"종결어미\"))'의 활용형은 'merge(({dform[0]}, \"형용사\"), (\"ᆫ\", \"관형사형전성어미\"))'batchim(\"으로\", \"로\") 써야 합니다.")
     .build(),
@@ -629,7 +640,7 @@ _MIF = [
     .build(),
 
     *rule()
-    .tag_form(Tag.연결어미, "ㄹ래")
+    .tag_form(Tag.연결어미, "ᆯ래")
     .tag_form(Tag.보조사, "야")
     .msg("'~려야'가 올바른 표현입니다. 예: '하려야 할 수가 없다.'")
     .build(),
@@ -706,19 +717,21 @@ _MIF = [
     .build(),
     
     *rule()
-    .AND(tag(Tag.일반부사), forms({"두근두근", "중얼중얼"}))
+    .AND(tag(Tag.일반부사), forms({"두근두근", "중얼중얼", "바들바들"}))
     .form("거리")
-    .msg("첩어에는 '-거리다'가 결합할 수 없습니다. '두근두근대다' 등으로 수정해 주세요.")
+    .msg("첩어에는 '-거리다'가 결합할 수 없습니다. '{form[0]}대다' 등으로 수정해 주세요.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "잠구")
-    .msg("'잠그다/담그다'가 올바른 표현입니다. (잠가서, 잠갔다, 잠글)")
+    .any()
+    .msg("'잠그다'의 활용형은 'merge((\"잠그\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "치루")
-    .msg("'치르다'가 올바른 표현입니다. (치러서, 치렀다, 치를)")
+    .any()
+    .msg("'치르다'의 활용형은 'merge((\"치르\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()
@@ -734,7 +747,8 @@ _MIF = [
     
     *rule()
     .tag_form(Tag.동사, "모자르")
-    .msg("'모자라다'가 올바른 표현입니다.")
+    .any()
+    .msg("'merge((\"모자라\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()
@@ -744,6 +758,7 @@ _MIF = [
     
     *rule()
     .tag_form(Tag.동사불규칙활용, "내딛")
+    .any()
     .msg("'내디뎌', '내디뎠', '내디딜'이 올바른 표현입니다.")
     .build(),
     
