@@ -213,6 +213,7 @@ class SpellChecker:
         expanded_cursors: dict[_RuleNode, tuple[int, int]] = {}
 
         candidates: list[_Transition] = []
+        yielded_outputs: set[tuple[_RuleNode, int]] = set()
         NOT_STARTED = -1
 
         for i, token in enumerate(enriched_tokens):
@@ -268,7 +269,8 @@ class SpellChecker:
             for node, idxs in expanded_cursors.items():
                 start_idx, end_idx = idxs
 
-                if node.output_message and start_idx < i:
+                if node.output_message and start_idx < i and (node, start_idx) not in yielded_outputs:
+                    yielded_outputs.add((node, start_idx))
                     self._update_shortest_match(
                         current_step_errors,
                         node.output_message.render(enriched_tokens[start_idx:end_idx+1]),
@@ -349,7 +351,7 @@ class SpellChecker:
 
             for node, idxs in final_expanded.items():
                 start_idx, end_idx = idxs
-                if node.output_message:
+                if node.output_message and (node, start_idx) not in yielded_outputs:
                     self._update_shortest_match(
                         storage=final_step_errors,
                         msg=node.output_message.render(enriched_tokens[start_idx:end_idx+1]),

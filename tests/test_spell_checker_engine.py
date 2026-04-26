@@ -133,6 +133,7 @@ class TestOptional:
 BOS_EPSILON = [
     *rule()
     .NOT(form("BOS_NOT"))
+    .context()
     .form("BOS_A")
     .form("BOS_B")
     .msg("bos epsilon")
@@ -144,6 +145,7 @@ EOF_EPSILON = [
     .form("EOF_A")
     .form("EOF_B")
     .NOT(form("EOF_NOT"))
+    .context()
     .msg("eof epsilon")
     .build(),
 ]
@@ -390,6 +392,93 @@ class TestComplexCondition:
         errors = list(self.checker.check(tokens))
         assert_found(errors, "context-opt 조합 검사", 2, 3)
         
+# ── opt 중복 출력 방지 ──
+# 재현 조건: opt 전이의 epsilon skip 경로와 normal 경로가 동시에 유효할 때
+# (opt 토큰이 뒤따르는 NOT 조건도 만족하는 경우) 출력 노드가 다른 타임스텝에서
+# 두 번 활성화되어 같은 에러가 중복 출력되던 버그 수정 검증.
+
+OPT_DUPLICATE_RULES = [
+    *rule()
+    .form("A")
+    .form("OPT")
+    .opt()
+    .NOT(form("BLOCK"))
+    .msg("opt 중복 방지")
+    .build(),
+]
+
+class TestOptionalNoDuplicate:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.checker = SpellChecker()
+        self.checker.add_rule_from_list(OPT_DUPLICATE_RULES)
+
+    def test_opt_present_fires_once(self):
+        # OPT가 NOT(BLOCK)도 만족 → epsilon skip 경로와 normal 경로 모두 출력 노드에 도달
+        # 수정 전: 에러 2개, 수정 후: 에러 1개
+        tokens = build_tokens(("A", Tag.일반명사), ("OPT", Tag.일반명사), ("X", Tag.일반명사))
+        errors = [e for e in self.checker.check(tokens) if e.error_message == "opt 중복 방지"]
+        assert len(errors) == 1
+
+    def test_opt_absent_fires_once(self):
+        tokens = build_tokens(("A", Tag.일반명사), ("X", Tag.일반명사))
+        errors = [e for e in self.checker.check(tokens) if e.error_message == "opt 중복 방지"]
+        assert len(errors) == 1
+
+    def test_block_directly_after_a_suppresses(self):
+        # A 바로 뒤에 BLOCK → NOT(BLOCK) 실패, epsilon skip도 BLOCK을 만나므로 매칭 없음
+        tokens = build_tokens(("A", Tag.일반명사), ("BLOCK", Tag.일반명사))
+        errors = [e for e in self.checker.check(tokens) if e.error_message == "opt 중복 방지"]
+        assert len(errors) == 0
+
+    def test_multiple_positions_each_fire_once(self):
+        # 두 위치에서 매칭 → 각 1번씩 총 2번
+        tokens = build_tokens(
+            ("A", Tag.일반명사), ("OPT", Tag.일반명사), ("X", Tag.일반명사),
+            ("A", Tag.일반명사), ("OPT", Tag.일반명사), ("X", Tag.일반명사),
+        )
+        errors = [e for e in self.checker.check(tokens) if e.error_message == "opt 중복 방지"]
+        assert len(errors) == 2
+
+
+# prefix를 공유하는 두 규칙에서 중간 노드가 출력 노드이면서 outgoing transition도 있는 케이스.
+# yielded_outputs 체크가 커서 흐름이 아닌 출력에만 작용하므로 두 번째 출력이 억제되지 않아야 함.
+
+CHAIN_OUTPUT_RULES = [
+    *rule()
+    .form("P")
+    .form("Q")
+    .msg("PQ 출력")
+    .build(),
+
+    *rule()
+    .form("P")
+    .form("Q")
+    .form("R")
+    .msg("PQR 출력")
+    .build(),
+]
+
+class TestChainOutputNotSuppressed:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.checker = SpellChecker()
+        self.checker.add_rule_from_list(CHAIN_OUTPUT_RULES)
+
+    def test_both_outputs_fire(self):
+        # N_PQ는 출력 노드이면서 N_PQR로 가는 전이도 보유 → 두 출력 모두 발생해야 함
+        tokens = build_tokens(("P", Tag.일반명사), ("Q", Tag.일반명사), ("R", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert any(e.error_message == "PQ 출력" for e in errors)
+        assert any(e.error_message == "PQR 출력" for e in errors)
+
+    def test_shorter_rule_only(self):
+        tokens = build_tokens(("P", Tag.일반명사), ("Q", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert any(e.error_message == "PQ 출력" for e in errors)
+        assert all(e.error_message != "PQR 출력" for e in errors)
+
+
 # ── 스트레스 & 성능 벤치마크 테스트 ──
 
 STRESS_RULES = [
