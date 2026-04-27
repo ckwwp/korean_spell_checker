@@ -86,10 +86,10 @@ _CERTAINS: list[KoSpellRules] = [
     .build(),
     
     *rule()
-    .OR(tag_form(Tag.동사, "하"), tag_form(Tag.동사파생접미사, "하"))
-    .OR(tag_form(Tag.선어말어미, "었"), tag_form(Tag.선어말어미, "겠"))
+    .OR(tag_form(Tag.동사, "하"), tag_form(Tag.동사파생접미사, "하")).context()
+    .OR(tag_form(Tag.선어말어미, "었"), tag_form(Tag.선어말어미, "겠")).context()
     .tag_form(Tag.동사, "쓰")
-    .AND(tag(Tag.종결어미), forms({"ㅂ니다", "ㅂ니까"}))
+    .AND(tag(Tag.종결어미), forms({"ᆸ니다", "ᆸ니까"}))
     .msg("'습니다'의 오타가 아닌가요?")
     .build(),
     
@@ -139,7 +139,7 @@ _CERTAINS: list[KoSpellRules] = [
     *rule()
     .tag_form(Tag.일반명사, "끈")
     .tag_form(Tag.주격조사, "이")
-    .tag_form(Tag.명사형전성어미, "ㅁ")
+    .tag_form(Tag.명사형전성어미, "ᆷ")
     .OR(tag_form(Tag.일반부사, "없이"), tag_form(Tag.형용사, "없"))
     .msg("'끊임없이'의 오타가 아닌가요?")
     .build(),
@@ -694,8 +694,8 @@ _MIF = [
     .build(),
     
     *rule()
-    .tag_form(Tag.종결어미, "ㅂ시요")
-    .msg("'~ㅂ시오'가 올바른 표현입니다.")
+    .tag_form(Tag.종결어미, "ᆸ시요")
+    .msg("'~ᆸ시오'가 올바른 표현입니다.")
     .build(),
     
     *rule()
