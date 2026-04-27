@@ -95,7 +95,7 @@ def compile_message(parsed_msg: list, combo: tuple[Condition, ...], source: str 
             case TagNode(name="dform", index=i):
                 result.append(_DynamicPart(lambda tokens, i=i: tokens[i].form, f"dform[{i}]"))
             case TagNode(name="dtag", index=i):
-                result.append(_DynamicPart(lambda tokens, i=i: tokens[i].form, f"dtag[{i}]"))
+                result.append(_DynamicPart(lambda tokens, i=i: tokens[i].tag, f"dtag[{i}]"))
             case QuotedNode():
                 result.append(node.value)
             case MethodNode():
