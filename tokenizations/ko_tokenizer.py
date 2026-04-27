@@ -29,8 +29,8 @@ class KoTokenizer(Kiwi):
         dictionary_files = get_all_file_paths(self.DEFAULT_DICTIONARY_PATH, "csv")
         for file in dictionary_files:
             for words in make_dictionary_list(file):
-                word, tag = words
-                self.add_user_word(word=word, tag=tag)
+                word, tag, score = words
+                self.add_user_word(word=word, tag=tag, score=score)
 
     def _add_termbase(self):
         termbase_files = get_all_file_paths(self.DEFAULT_TERMBASE_PATH, "csv")

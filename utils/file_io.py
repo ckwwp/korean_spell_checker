@@ -9,9 +9,15 @@ from korean_spell_checker.models.constants import DEFAULT_EXCEL_COL_NAME, DEFAUL
 
 warnings.filterwarnings('ignore', message='Data Validation extension is not supported')
 
-def make_dictionary_list(dictionary_file_name: Path) -> list[tuple[str, str]]:
+def make_dictionary_list(dictionary_file_name: Path) -> list[tuple[str, str, int]]:
 	df = pd.read_csv(dictionary_file_name, dtype=str)
-	return [(row.word, Tag[row.category]) for row in df.itertuples(index=False)]
+	if df["word"].isna().any() or (df["word"] == "").any():
+		raise ValueError("word column has empty values")
+	if df["category"].isna().any() or (df["category"] == "").any():
+		raise ValueError("category column has empty values")
+	df["score"] = df["score"].fillna("0").replace("", "0")
+
+	return [(row.word, Tag[row.category], int(row.score)) for row in df.itertuples(index=False)] # type: ignore
 
 def make_termbase_list(termbase_file_name: Path, col_names: list[str] = None) -> list[str]:
 	if col_names is None:
