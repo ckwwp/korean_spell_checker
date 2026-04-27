@@ -138,6 +138,13 @@ BOS_EPSILON = [
     .form("BOS_B")
     .msg("bos epsilon")
     .build(),
+
+    *rule()
+    .NOT(form("a"))
+    .form("b")
+    .form("c")
+    .msg("bos epsilon false case")
+    .build(),
 ]
 
 EOF_EPSILON = [
@@ -164,6 +171,16 @@ class TestEpsilonTransition:
 
     def test_bos_false_case(self):
         tokens = build_tokens(("BOS_NOT", Tag.일반명사), ("BOS_A", Tag.일반명사), ("BOS_B", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_empty(errors)
+
+    def test_bos_should_transit(self):
+        tokens = build_tokens(("d", Tag.일반명사), ("b", Tag.일반명사), ("c", Tag.일반명사))
+        errors = list(self.checker.check(tokens))
+        assert_found(errors, "bos epsilon false case", 0, 3)
+
+    def test_bos_shoud_not_transit(self):
+        tokens = build_tokens(("a", Tag.일반명사), ("b", Tag.일반명사), ("c", Tag.일반명사))
         errors = list(self.checker.check(tokens))
         assert_empty(errors)
 
@@ -343,13 +360,13 @@ COMPLEX_CONDITION = [
     .build(),
     
     *rule()
-    .AND(first(), batchim("ㅂ"), length(1))
+    .AND(first(), batchim("ᆸ"), length(1))
     .AND(NOT(tag(Tag.일반명사)), form("0"))
     .msg("AND-NOT 조건 검사")
     .build(),
     
     *rule()
-    .AND(NOT(batchim("ㄹ")), any_batchim())
+    .AND(NOT(batchim("ᆯ")), any_batchim())
     .OR(form("0"), tag(Tag.대명사))
     .AND(length(4), tag(Tag.일반명사))
     .msg("첫 토큰 NOT 조건 검사")

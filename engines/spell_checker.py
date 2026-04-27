@@ -5,7 +5,7 @@ from typing import Iterator
 
 from korean_spell_checker.models.interface import KoToken, SpellError, SpellErrorType
 from korean_spell_checker.models.spell_checker_classes import SpacingRule, Condition, TagCondition, FormCondition, TagAndFormCondition, NotCondition, BatchimCondition, AnyBatchimCondition
-from korean_spell_checker.utils.hangul import get_jongseong, is_jamo
+from korean_spell_checker.utils.hangul import get_compatible_batchim, is_jamo
 from korean_spell_checker.configs.spell_checker_config_builder import KoSpellRules, CompiledMessage
 
 @dataclass(slots=True)
@@ -203,7 +203,7 @@ class SpellChecker:
         enriched_tokens = [
             _EnrichedToken(
                 form=t.form, tag=t.tag, start=t.start, end=t.end, len=t.len, lemma=t.lemma,
-                batchim=(t.form[-1] if is_jamo(t.form[-1]) else get_jongseong(t.form[-1]))
+                batchim=(t.form[-1] if is_jamo(t.form[-1]) else get_compatible_batchim(t.form[-1]))
             )
             for t in tokens
         ]
@@ -244,7 +244,7 @@ class SpellChecker:
                     start_idx, end_idx = idxs
 
                     for trans in current_node.fallback_transitions:
-                        if not isinstance(trans.condition, NotCondition) or trans.spacing_rule != SpacingRule.ANY and trans.is_context:
+                        if not isinstance(trans.condition, NotCondition) and not trans.spacing_rule != SpacingRule.ANY and not trans.is_context:
                             continue
                         
                         target = trans.target_node
