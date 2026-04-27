@@ -53,19 +53,14 @@ for filename in FILE_ERROR_MAPPING.keys():
 
 
 class TestSpellChecker:
-    @pytest.fixture(autouse=True)
-    def setup(self, checker):
-        checker.add_rule_from_list(SPELL_CHECK_RULES)
-        self.checker = checker
-
     @pytest.mark.parametrize(
         "c", 
         ALL_CASES, 
-        ids=lambda c: f"{'ERROR' if c.expect_error else 'PASS'}-{c.text[:15]}"
+        ids=lambda c: f"{'ERROR' if c.expect_error else 'PASS'}-{c.text}"
     )
-    def test_spell_checker_from_tsv(self, tokenizer, c: Case):
+    def test_spell_checker_from_tsv(self, configured_checker, tokenizer, c: Case):
         tokens = tokenizer.tokenize(c.text)
-        errors = list(self.checker.check(tokens))
+        errors = list(configured_checker.check(tokens))
 
         if c.expect_error:
             assert_error(errors, tokens)
