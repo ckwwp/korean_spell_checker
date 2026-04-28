@@ -725,13 +725,13 @@ _MIF = [
     *rule()
     .tag_form(Tag.동사, "잠구")
     .any()
-    .msg("'잠그다'의 활용형은 'merge((\"잠그\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
+    .msg("'merge((\"잠그\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()
     .tag_form(Tag.동사, "치루")
     .any()
-    .msg("'치르다'의 활용형은 'merge((\"치르\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
+    .msg("'merge((\"치르\", \"동사\"), ({dform[1]}, {dtag[1]}))'batchim(\"이\", \"가\") 올바른 표현입니다.")
     .build(),
     
     *rule()

@@ -8,32 +8,14 @@ def rule() -> RuleBuilder:
 
 _TEST_SPELL_CHECK_RULES = [
     *rule()
-    .tag_form(Tag.일반명사, "끝")
-    .tag_form(Tag.형용사, "없")
-    .if_spaced()
-    .msg("'끝없는'으로 붙여 써야 합니다.")
-    .build(),
+    .tag(Tag.연결어미)
+    .AND(tag(Tag.보조용언), forms({"않"})).if_not_spaced()
+    .AND(tag(Tag.관형사형전성어미), forms({"는", "은"}))
+    .msg("'{form[0]}다'를 앞 말과 띄어 써야 합니다.").build(),
+]
 
-    *rule()
-    .tag_form(Tag.관형사형전성어미, "ㄹ")
-    .tag_form(Tag.의존명사, "지")
-    .if_spaced()
-    .msg("'지'를 붙여 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tag_form(Tag.관형사형전성어미, "는")
-    .tag_form(Tag.의존명사, "대로")
-    .if_not_spaced()
-    .msg("'대로'를 띄어 써야 합니다.")
-    .build(),
-
-    *rule()
-    .tags({Tag.일반명사, Tag.대명사, Tag.고유명사})
-    .tag_form(Tag.보조사, "대로")
-    .if_spaced()
-    .msg("'대로'를 붙여 써야 합니다.")
-    .build(),
+SPELL_CHECK_RULES = [
+    *_TEST_SPELL_CHECK_RULES
 ]
 
 SPELL_CHECK_RULES: list[KoSpellRules] = [
