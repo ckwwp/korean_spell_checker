@@ -179,7 +179,7 @@ class TestEpsilonTransition:
         errors = list(self.checker.check(tokens))
         assert_found(errors, "bos epsilon false case", 0, 3)
 
-    def test_bos_shoud_not_transit(self):
+    def test_bos_should_not_transit(self):
         tokens = build_tokens(("a", Tag.일반명사), ("b", Tag.일반명사), ("c", Tag.일반명사))
         errors = list(self.checker.check(tokens))
         assert_empty(errors)
@@ -544,7 +544,7 @@ class TestEnginePerformanceWithDefaultConfig:
         self.checker = SpellChecker()
         self.checker.add_rule_from_list(SPELL_CHECK_RULES)
 
-    def test_massive_token_stream_performance_with_deafult_config(self):
+    def test_massive_token_stream_performance_with_default_config(self):
         TOKEN_COUNT = 10000
         tokens = build_tokens(*[("테스트", Tag.일반명사) for _ in range(TOKEN_COUNT)])
         
