@@ -184,7 +184,7 @@ def _compile_tuple_item(item, form_vals: list[str]) -> MessagePart:
 @dataclass(frozen=True, slots=True)
 class _TagSet:
     """AND 내부에서 여러 태그를 묶는 용도. Condition이 아님."""
-    tags: set[str]
+    tags: set[Tag]
 
 @dataclass(frozen=True, slots=True)
 class _FormSet:
@@ -211,7 +211,7 @@ class RuleBuilder:
         self.steps.append(_RuleStepData([TagCondition(tag=tag)]))
         return self
 
-    def tags(self, tag_set: set[str]):
+    def tags(self, tag_set: set[Tag]):
         self.steps.append(_RuleStepData([TagCondition(tag=t) for t in tag_set]))
         return self
     
@@ -352,7 +352,7 @@ class RuleBuilder:
 def tag(t: str) -> TagCondition:
     return TagCondition(tag=t)
 
-def tags(ts: set[str]) -> _TagSet:
+def tags(ts: set[Tag]) -> _TagSet:
     return _TagSet(tags=ts)
 
 def form(f: str) -> FormCondition:
