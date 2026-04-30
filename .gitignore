@@ -22,3 +22,13 @@ env/
 bin/
 include/
 lib/
+
+# [Rust]
+/rust/target/
+Cargo.lock
+
+# [maturin 빌드 산출물]
+*.so
+*.pyd
+_core*.so
+_core*.pyd
