@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.0"]
+build-backend = "maturin"
 
 [project]
 name = "korean-spell-checker"
@@ -18,3 +18,8 @@ addopts = "-m 'not perf'"
 
 [tool.pyright]
 extraPaths = [".."]
+
+[tool.maturin]
+module-name = "_core"
+features = ["pyo3/extension-module"]
+manifest-path = "rust/Cargo.toml"
