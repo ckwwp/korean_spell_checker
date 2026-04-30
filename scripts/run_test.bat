@@ -1,4 +1,4 @@
 @echo off
 cd ../../
-python -m pytest korean_spell_checker/tests/ -s
+korean_spell_checker\venv\Scripts\python -m pytest korean_spell_checker/tests/ -s
 pause

@@ -19,17 +19,17 @@ impl TrieNode {
     }
 }
 
-#[pyclass]
-struct RawStringSearcher {
+#[pyclass(subclass)]
+struct RustRawStringSearcher {
     nodes: Vec<TrieNode>,
     built: bool,
 }
 
 #[pymethods]
-impl RawStringSearcher {
+impl RustRawStringSearcher {
     #[new]
     fn new() -> Self {
-        RawStringSearcher {
+        RustRawStringSearcher {
             nodes: vec![TrieNode::new()],
             built: false,
         }
@@ -82,7 +82,13 @@ impl RawStringSearcher {
         }
     }
 
-    fn search(&self, word: &str) -> Vec<(String, String, usize, usize)> {
+    fn search_raw(&self, word: &str) -> PyResult<Vec<(String, String, usize, usize)>> {
+        if self.nodes[0].children.is_empty() {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "You must have at least one word to search."
+            ));
+        }
+
         let mut current = 0;
         let mut result = Vec::new();
 
@@ -99,12 +105,12 @@ impl RawStringSearcher {
             }
         }
 
-        result
+        Ok(result)
     }
 }
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<RawStringSearcher>()?;
+    m.add_class::<RustRawStringSearcher>()?;
     Ok(())
 }
