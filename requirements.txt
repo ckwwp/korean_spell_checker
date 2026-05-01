@@ -7,8 +7,6 @@ iniconfig==2.3.0
 jamo==0.4.1
 kiwipiepy==0.23.1
 kiwipiepy_model==0.23.0
--e git+ssh://git@github.com/ink-14/korean_spell_checker.git@34864b363a734e8abbd47f8247242ae1d921c7ce#egg=korean_spell_checker
-loguru==0.7.3
 maturin==1.13.1
 numpy==2.4.4
 openpyxl==3.1.5

@@ -1,7 +1,5 @@
 import sys
 
-from loguru import logger
-
 from _core import RawStringSearcher
 from korean_spell_checker.tokenizations.ko_tokenizer import KoTokenizer
 from korean_spell_checker.engines.spell_checker import SpellChecker
@@ -9,7 +7,7 @@ from korean_spell_checker.configs.spell_checker_config import SPELL_CHECK_RULES
 from korean_spell_checker.configs.raw_string_searcher_config import RAW_STRING_RULES
 from korean_spell_checker.models.interface import SpellError
 
-logger.info("초기화 실행 중")
+print("초기화 실행 중")
 tokenizer = KoTokenizer()
 _ = tokenizer.tokenize("")
 spell_check = SpellChecker(True)
@@ -22,7 +20,7 @@ for words, err_type in RAW_STRING_RULES:
         for word in word_group:
             raw_string_check.add_word(word, msg, "RAW")
             
-logger.info("초기화 완료")
+print("초기화 완료")
 
 if __name__ == "__main__":
     try:
