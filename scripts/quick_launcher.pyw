@@ -5,6 +5,7 @@ import pickle
 import re
 import sys
 import threading
+from pathlib import Path
 
 if sys.stdout is None:
     sys.stdout = open(os.devnull, 'w')
@@ -36,8 +37,11 @@ import korean_spell_checker.configs.spell_checker_config_warning as _spell_warni
 import korean_spell_checker.configs.spell_checker_config as _spell_cfg
 import korean_spell_checker.configs.raw_string_searcher_config as _raw_cfg
 from korean_spell_checker.reporters.html_reporter import highlight_text, get_error_type_name
+from korean_spell_checker.utils.file_io import read_txt_file, get_all_file_paths
 from bktree import BKTree
 from jamo import h2j
+
+TAG_REPLACE_REGEX = re.compile(r"\<[^>]+\>")
 
 HTML = """
 <!DOCTYPE html>
@@ -136,11 +140,20 @@ HTML = """
   .btn-danger:not(:disabled):hover  { background: var(--danger-dark); box-shadow: 0 2px 8px rgba(239,68,68,0.35); }
   .btn-warning { background: var(--warning); color: #fff; box-shadow: 0 1px 3px rgba(245,158,11,0.3); }
   .btn-warning:not(:disabled):hover { background: var(--warning-dark); box-shadow: 0 2px 8px rgba(245,158,11,0.35); }
+  .btn-success { background: var(--success); color: #fff; box-shadow: 0 1px 3px rgba(16,185,129,0.3); }
+  .btn-success:not(:disabled):hover { background: #059669; box-shadow: 0 2px 8px rgba(16,185,129,0.35); }
   label {
     display: flex; align-items: center; gap: 6px;
     cursor: pointer; user-select: none; font-size: 13px; color: var(--muted);
   }
   label input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+  select {
+    padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--r-sm);
+    font-family: inherit; font-size: 13px; background: var(--surface); color: var(--text);
+    cursor: pointer; outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+  select:disabled { opacity: 0.5; cursor: not-allowed; }
   .status { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
   .result-area { margin-top: 14px; }
 
@@ -308,6 +321,40 @@ HTML = """
     font-family: inherit; font-weight: 500; transition: background 0.12s, border-color 0.12s;
   }
   .dict-suggestion-chip:hover { background: var(--warning-bg); border-color: var(--warning); }
+
+  /* ── 폴더 읽기 ── */
+  .folder-config-row {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .folder-progress-box {
+    margin-top: 10px; padding: 10px 14px; background: var(--accent-bg);
+    border: 1px solid rgba(79,70,229,0.2); border-radius: var(--r);
+    font-size: 13px; color: var(--accent-dark);
+  }
+  .label-counter {
+    font-size: 13px; color: var(--muted); margin-bottom: 8px; font-weight: 500;
+  }
+  .label-counter strong { color: var(--accent); font-size: 15px; }
+  table.folder-result-table th {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background 0.15s;
+  }
+  table.folder-result-table th:hover { background: var(--danger-dark); }
+  table.folder-result-table th .sort-arrow {
+    display: inline-block; margin-left: 4px; opacity: 0.6; font-size: 10px;
+  }
+  .debug-btn {
+    padding: 4px 10px; font-size: 11px;
+    background: var(--muted); color: #fff;
+    border-radius: var(--r-sm); cursor: pointer;
+  }
+  .debug-btn:hover:not(:disabled) { background: var(--text); }
+  .debug-path-text {
+    white-space: pre-line; font-family: monospace;
+    font-size: 11px; color: var(--muted); line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -316,6 +363,7 @@ HTML = """
   <button class="tab-btn active" onclick="switchTab('tokenizer')">토크나이저</button>
   <button class="tab-btn"        onclick="switchTab('spell')">맞춤법 검사</button>
   <button class="tab-btn"        onclick="switchTab('dict')">사전 검색</button>
+  <button class="tab-btn"        onclick="switchTab('folder')">폴더 읽기</button>
 </div>
 
 <!-- ════ 토크나이저 탭 ════ -->
@@ -359,6 +407,48 @@ HTML = """
   </div>
   <div class="status" id="dict-status"></div>
   <div id="dict-results"></div>
+</div>
+
+<!-- ════ 폴더 읽기 탭 ════ -->
+<div id="pane-folder" class="tab-pane">
+  <h2>폴더 읽어서 검사</h2>
+
+  <div id="folder-config-area">
+    <div class="folder-config-row">
+      <label>
+        규칙:
+        <select id="folder-rule" style="margin-left:6px;">
+          <option value="SPELL_CHECK_RULES">기본</option>
+          <option value="TEST_SPELL_CHECK_RULES">테스트</option>
+        </select>
+      </label>
+      <label>
+        <input type="checkbox" id="folder-labeling" onchange="onLabelingToggle()">
+        라벨링 모드 (ML_LABELINGS, RawString 미적용)
+      </label>
+    </div>
+    <button id="btn-folder-start" class="btn-primary" onclick="startFolderCheck()">
+      폴더 선택 후 시작
+    </button>
+    <div class="status" id="folder-status"></div>
+  </div>
+
+<div id="folder-labeling-area" style="display:none; margin-top:16px;">
+    <div class="label-counter">
+      <strong><span id="label-idx">0</span></strong> / <span id="label-total">0</span>
+    </div>
+    <div id="label-rule-id" style="font-size:12px; color:var(--muted); font-family:monospace; margin-bottom:6px;"></div>
+    <div id="label-content" class="spell-preview"></div>
+    <div class="toolbar">
+      <button class="btn-warning" onclick="goBackLabel()" id="btn-label-back" disabled>뒤로 가기 (↑)</button>
+      <button class="btn-success" onclick="submitLabel('0')">0: 정상/패스 (←)</button>
+      <button class="btn-danger" onclick="submitLabel('1')">1: 오류/교정 (→)</button>
+      <button class="btn-primary" onclick="submitLabel('SKIP')">건너뛰기 (↓)</button>
+      <button class="btn-danger" onclick="abortLabeling()" style="margin-left:auto;">중단</button>
+    </div>
+  </div>
+
+  <div id="folder-results-area" style="margin-top:14px;"></div>
 </div>
 
 <script>
@@ -471,7 +561,7 @@ function runSpellCheck() {
 }
 
 function escapeHtml(str) {
-  return str
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -611,6 +701,256 @@ function rebuildSpellRules() {
     else setSpellStatus('재빌드 완료!');
   });
 }
+
+/* ════ 폴더 읽기 ════ */
+function onLabelingToggle() {
+  const mode = document.getElementById('folder-labeling').checked;
+  document.getElementById('folder-rule').disabled = mode;
+}
+
+function setFolderBlocking(on) {
+  document.getElementById('btn-folder-start').disabled = on;
+  document.getElementById('folder-labeling').disabled = on;
+  if (on) {
+    document.getElementById('folder-rule').disabled = true;
+  } else {
+    document.getElementById('folder-rule').disabled =
+      document.getElementById('folder-labeling').checked;
+  }
+}
+
+function setFolderStatus(msg) {
+  document.getElementById('folder-status').textContent = msg;
+}
+
+async function startFolderCheck() {
+  const labelingMode = document.getElementById('folder-labeling').checked;
+  const ruleName = labelingMode
+    ? 'ML_LABELINGS'
+    : document.getElementById('folder-rule').value;
+
+  setFolderBlocking(true);
+  setFolderStatus('폴더 선택…');
+  document.getElementById('folder-results-area').innerHTML = '';
+  document.getElementById('folder-labeling-area').style.display = 'none';
+
+  const folderRes = await pywebview.api.pick_folder();
+  if (folderRes.cancelled || folderRes.error) {
+    setFolderBlocking(false);
+    setFolderStatus(folderRes.error ? '오류: ' + folderRes.error : '취소됨');
+    return;
+  }
+
+  let savePath = null;
+  if (labelingMode) {
+    setFolderStatus('TSV 저장 위치 선택…');
+    const saveRes = await pywebview.api.pick_save_file();
+    if (saveRes.cancelled || saveRes.error) {
+      setFolderBlocking(false);
+      setFolderStatus(saveRes.error ? '오류: ' + saveRes.error : '취소됨');
+      return;
+    }
+    savePath = saveRes.path;
+  }
+
+  setFolderStatus('처리 시작…');
+  const startRes = await pywebview.api.start_folder_check(
+    folderRes.folder, ruleName, labelingMode, savePath
+  );
+  if (startRes.error) {
+    setFolderBlocking(false);
+    setFolderStatus('오류: ' + startRes.error);
+    return;
+  }
+  pollFolderProgress();
+}
+
+async function pollFolderProgress() {
+  const p = await pywebview.api.get_folder_progress();
+  if (p.error) {
+    setFolderStatus('오류: ' + p.error);
+    setFolderBlocking(false);
+    return;
+  }
+  const cur = p.current_file ? ' (' + p.current_file + ')' : '';
+  const found = p.labeling_mode ? p.label_queue_count : p.results_count;
+  setFolderStatus(
+    `처리 중… ${p.progress}/${p.total}${cur} — 발견 ${found}건`
+  );
+
+  if (p.running) {
+    setTimeout(pollFolderProgress, 250);
+    return;
+  }
+
+  if (p.stage === 'labeling') {
+    setFolderStatus(`라벨링 시작 (총 ${p.label_queue_count}건)`);
+    document.getElementById('folder-labeling-area').style.display = 'block';
+    loadNextLabel();
+  } else {
+    const r = await pywebview.api.get_folder_results();
+    renderFolderResults(r.results);
+    setFolderStatus(`완료 — ${r.results.length}건 발견`);
+    setFolderBlocking(false);
+  }
+}
+
+async function loadNextLabel() {
+  const item = await pywebview.api.get_next_label_item();
+  if (item.done) {
+    document.getElementById('folder-labeling-area').style.display = 'none';
+    setFolderStatus(`라벨링 완료 (${item.total}건)`);
+    setFolderBlocking(false);
+    return;
+  }
+  document.getElementById('label-idx').textContent = item.idx;
+  document.getElementById('label-total').textContent = item.total;
+  document.getElementById('label-rule-id').textContent = '[' + (item.rule_id || '-') + ']';
+  document.getElementById('label-content').innerHTML = item.highlighted;
+  
+  const backBtn = document.getElementById('btn-label-back');
+  if (backBtn) backBtn.disabled = (item.idx <= 1);
+}
+
+async function submitLabel(label) {
+  const res = await pywebview.api.submit_label(label);
+  if (res.error) {
+    setFolderStatus('저장 오류: ' + res.error);
+    return;
+  }
+  loadNextLabel();
+}
+
+async function goBackLabel() {
+  const res = await pywebview.api.go_back_label();
+  if (res.error) {
+    setFolderStatus('뒤로 가기 오류: ' + res.error);
+    return;
+  }
+  loadNextLabel();
+}
+
+async function abortLabeling() {
+  await pywebview.api.abort_labeling();
+  document.getElementById('folder-labeling-area').style.display = 'none';
+  setFolderStatus('라벨링 중단됨');
+  setFolderBlocking(false);
+}
+
+function renderFolderResults(results) {
+  const area = document.getElementById('folder-results-area');
+  if (!results.length) {
+    area.innerHTML = '<div class="no-errors">오류가 없습니다.</div>';
+    return;
+  }
+  const cols = ['#', 'File', 'Error Type', 'Original Text (Detected)', 'Msg', 'Debug'];
+  const widths = ['4%', '12%', '12%', '35%', '30%', '7%'];
+
+  const colgroup = '<colgroup>'
+    + widths.map(w => '<col style="width:' + w + ';">').join('')
+    + '</colgroup>';
+
+  const th = '<tr>'
+    + cols.map((c, i) =>
+        '<th onclick="sortFolderTable(' + i + ')">'
+        + escapeHtml(c) + '<span class="sort-arrow"></span></th>'
+      ).join('')
+    + '</tr>';
+
+  const tbody = results.map((r, i) => {
+    return '<tr>'
+      + '<td>' + (i + 1) + '</td>'
+      + '<td style="word-break:break-all;">' + escapeHtml(r.file) + '</td>'
+      + '<td class="err-type" style="white-space:pre-line;">' + escapeHtml(r.error_type) + '</td>'
+      + '<td style="white-space:pre-wrap; line-height:1.7;">' + r.highlighted + '</td>'
+      + '<td style="white-space:pre-line; word-break:break-word;">' + escapeHtml(r.msg) + '</td>'
+      + '<td data-debug-idx="' + i + '">'
+      +   '<button class="debug-btn" onclick="loadDebugPath(this, ' + i + ')">보기</button>'
+      + '</td>'
+      + '</tr>';
+  }).join('');
+
+  area.innerHTML =
+    '<table class="error-table folder-result-table" style="table-layout:fixed; width:100%;">'
+    + colgroup
+    + '<thead>' + th + '</thead><tbody>' + tbody + '</tbody></table>';
+}
+
+function sortFolderTable(n) {
+  const table = document.querySelector('.folder-result-table');
+  if (!table) return;
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.rows);
+
+  const prevCol = table.dataset.sortCol;
+  const prevDir = table.dataset.sortDir || 'asc';
+  const dir = (String(prevCol) === String(n) && prevDir === 'asc') ? 'desc' : 'asc';
+
+  rows.sort((a, b) => {
+    let av = a.cells[n].innerText || a.cells[n].textContent;
+    let bv = b.cells[n].innerText || b.cells[n].textContent;
+    if (n === 0) {
+      av = parseInt(av) || 0;
+      bv = parseInt(bv) || 0;
+      return dir === 'asc' ? av - bv : bv - av;
+    }
+    const cmp = av.localeCompare(bv);
+    return dir === 'asc' ? cmp : -cmp;
+  });
+
+  const frag = document.createDocumentFragment();
+  rows.forEach(r => frag.appendChild(r));
+  tbody.appendChild(frag);
+
+  table.dataset.sortCol = n;
+  table.dataset.sortDir = dir;
+
+  // 화살표 갱신
+  table.querySelectorAll('th .sort-arrow').forEach((s, i) => {
+    s.textContent = (i === n) ? (dir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
+async function loadDebugPath(btn, idx) {
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = '…';
+  const r = await pywebview.api.get_debug_path(idx);
+  const td = btn.parentElement;
+  if (r.error) {
+    td.innerHTML = '<span style="color:#ef4444; font-size:11px;">'
+      + escapeHtml(r.error) + '</span>';
+    return;
+  }
+  td.innerHTML = '<div class="debug-path-text">'
+    + escapeHtml(r.debug_path || '(없음)') + '</div>';
+}
+
+/* ── 라벨링 단축키 (방향키) 설정 ── */
+document.addEventListener('keydown', function(e) {
+  const labelingArea = document.getElementById('folder-labeling-area');
+  
+  // 라벨링 탭이 켜져 있고, 다른 입력창(검색창 등)에 커서가 없을 때만 작동
+  if (labelingArea.style.display === 'block' && 
+      document.activeElement.tagName !== 'INPUT' && 
+      document.activeElement.tagName !== 'TEXTAREA') {
+      
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      submitLabel('0'); // 0: 정상 (왼쪽 방향키)
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      submitLabel('1'); // 1: 오류 (오른쪽 방향키)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      submitLabel('SKIP'); // 건너뛰기 (아래 방향키)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const backBtn = document.getElementById('btn-label-back');
+      if (!backBtn.disabled) goBackLabel(); // 뒤로 가기 (위 방향키)
+    }
+  }
+});
 </script>
 </body>
 </html>
@@ -630,6 +970,11 @@ class Api:
         self._dict_loaded = False
         self._bktree: BKTree | None = None
         self._word_index: dict[str, dict] = {}
+        # 폴더 읽기
+        self._window = None
+        self._folder_state: dict | None = None
+        self._folder_debug_spell: SpellChecker | None = None
+        self._folder_debug_rule_name: str | None = None
 
     # ── 내부 헬퍼 ──────────────────────────────────────────────
 
@@ -638,13 +983,17 @@ class Api:
             return {"error": "초기화 중입니다. 잠시 후 다시 시도해주세요."}
         return None
 
-    def _build_spell_checkers(self):
+    def _reload_spell_modules(self):
         importlib.reload(_spell_meaning_cfg)
         importlib.reload(_spell_spacing_cfg)
         importlib.reload(_spell_specific_cfg)
         importlib.reload(_spell_spelling_cfg)
         importlib.reload(_spell_warning_cfg)
         importlib.reload(_spell_cfg)
+
+    def _build_spell_checkers(self):
+        """기본(SPELL_CHECK_RULES) + RawString을 self에 세팅."""
+        self._reload_spell_modules()
         importlib.reload(_raw_cfg)
         self._spell = SpellChecker(True)
         self._raw = RawStringSearcher()
@@ -678,12 +1027,11 @@ class Api:
             return {"error": str(e)}
 
     def rebuild_tokenizer(self) -> dict:
-        """KoTokenizer 인스턴스를 새로 생성합니다."""
         if err := self._ensure_ready():
             return err
         try:
             self._tkn = KoTokenizer.reset()
-            self._tkn.tokenize("")  # 워밍업
+            self._tkn.tokenize("")
             return {"ok": True}
         except Exception as e:
             return {"error": str(e)}
@@ -691,7 +1039,6 @@ class Api:
     # ── 사전 검색 API ───────────────────────────────────────────
 
     def _load_dict(self) -> str | None:
-        """pickle 로드 (최초 1회). 오류 메시지 반환, 없으면 None."""
         if self._dict_loaded:
             return None
         self._dict_loaded = True
@@ -702,7 +1049,6 @@ class Api:
             with gzip.open(_dict_pkl, 'rb') as f:
                 data = pickle.load(f)
             if isinstance(data, list):
-                # 구버전 포맷 (BK-Tree 없음)
                 self._dict_data = data
             else:
                 self._dict_data = data['entries']
@@ -725,14 +1071,13 @@ class Api:
         return len(query) / len(word_norm)
 
     def _fuzzy_suggest(self, query: str) -> list[dict]:
-        """BK-Tree 로 유사어 최대 5건 반환. 숫자·기호 제거 후 중복 제거."""
         if not self._bktree:
             return []
         jlen = len(h2j(query))
         threshold = 1 if jlen <= 3 else (2 if jlen <= 7 else 3)
         candidates = self._bktree.search(query, threshold)
-        seen_raw: set[str] = set()    # BK-Tree 후보 중복 방지
-        seen_clean: set[str] = set()  # 정리 후 표시 단어 중복 방지
+        seen_raw: set[str] = set()
+        seen_clean: set[str] = set()
         results: list[dict] = []
         for _, word in candidates:
             if word in seen_raw:
@@ -789,6 +1134,7 @@ class Api:
                     "msg": e.error_message,
                     "start": e.start_index,
                     "end": e.end_index,
+                    "rule_id": e.rule_id,
                     "debug_path": e.debug_path or "",
                 }
                 for e in errors
@@ -798,7 +1144,6 @@ class Api:
             return {"error": str(e)}
 
     def rebuild_spell_checker(self) -> dict:
-        """SpellChecker와 RawStringSearcher를 새로 생성하고 규칙을 재적용합니다."""
         if err := self._ensure_ready():
             return err
         self._ready = False
@@ -810,6 +1155,356 @@ class Api:
             self._ready = True
             return {"error": str(e)}
 
+    # ── 폴더 읽기 API ───────────────────────────────────────────
+
+    def pick_folder(self) -> dict:
+        if not self._window:
+            return {"error": "window not ready"}
+        try:
+            result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
+        except Exception as e:
+            return {"error": str(e)}
+        if not result:
+            return {"cancelled": True}
+        return {"folder": result[0]}
+
+    def pick_save_file(self) -> dict:
+        if not self._window:
+            return {"error": "window not ready"}
+        try:
+            result = self._window.create_file_dialog(
+                webview.SAVE_DIALOG,
+                save_filename="labels.tsv",
+                file_types=("TSV files (*.tsv)", "All files (*.*)")
+            )
+        except Exception as e:
+            return {"error": str(e)}
+        if not result:
+            return {"cancelled": True}
+        path = result if isinstance(result, str) else result[0]
+        return {"path": path}
+
+    def _collect_paragraphs(self, file_path) -> list[str]:
+        df = read_txt_file(file_path)
+        paragraphs: list[str] = []
+        for row_text in df["text"]:
+            row_text = str(row_text)
+            row_text = row_text.replace("<br>", "\n")
+            row_text = row_text.replace("\\n", "\n")
+            row_text = row_text.replace("\u00A0", " ")
+            row_text = TAG_REPLACE_REGEX.sub("", row_text)
+            for paragraph in row_text.split("\n"):
+                paragraph = paragraph.strip()
+                if paragraph:
+                    paragraphs.append(paragraph)
+        return paragraphs
+
+    def _build_folder_spell_checker(self, rule_name: str, debug: bool = False) -> SpellChecker:
+      """폴더 읽기 전용: 선택된 규칙으로 reload + 새 SpellChecker 생성."""
+      self._reload_spell_modules()
+      rules = getattr(_spell_cfg, rule_name, None)
+      if rules is None:
+          raise RuntimeError(f"규칙 '{rule_name}'을 찾을 수 없습니다.")
+      sc = SpellChecker(debug)
+      sc.add_rule_from_list(rules)
+      return sc
+
+    def start_folder_check(self, folder: str, rule_name: str,
+                           labeling_mode: bool, save_path: str | None) -> dict:
+        if err := self._ensure_ready():
+            return err
+        if self._folder_state and self._folder_state.get("running"):
+            return {"error": "이미 진행 중입니다."}
+        if labeling_mode and not save_path:
+            return {"error": "라벨링 모드에서는 저장 경로가 필요합니다."}
+
+        self._folder_state = {
+            "running": True,
+            "aborted": False,
+            "stage": "scanning",
+            "progress": 0,
+            "total": 0,
+            "current_file": "",
+            "results": [],
+            "label_queue": [],
+            "label_idx": 0,
+            "save_path": save_path,
+            "labeling_mode": labeling_mode,
+            "rule_name": rule_name,
+            "error": None,
+            "history": [], # 뒤로 가기를 위한 히스토리
+            "labeled_data": [], # 메모리에 라벨링 결과를 쌓아둘 리스트 추가
+        }
+        t = threading.Thread(
+            target=self._run_folder_check,
+            args=(folder, rule_name, labeling_mode),
+            daemon=True
+        )
+        t.start()
+        return {"ok": True}
+    
+    def _save_labeled_data(self) -> dict:
+        """메모리에 모인 라벨링 데이터를 파일에 한 번에 덮어쓰기(w 모드)로 저장합니다."""
+        state = self._folder_state
+        if not state or not state.get("save_path"):
+            return {"error": "저장 경로가 없습니다."}
+        
+        labeled_data = state.get("labeled_data", [])
+        if not labeled_data:
+            return {"ok": True} # 저장할 데이터가 없으면 그냥 넘어감
+
+        try:
+            with open(state["save_path"], "w", encoding="utf-8") as f:
+                f.writelines(labeled_data)
+            return {"ok": True}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _run_folder_check(self, folder: str, rule_name: str, labeling_mode: bool):
+        state = self._folder_state
+        self._folder_debug_spell = None
+        self._folder_debug_rule_name = None
+        try:
+            files = get_all_file_paths(folder, "txt")
+            state["total"] = len(files)
+            state["stage"] = "checking"
+
+            spell = self._build_folder_spell_checker(rule_name, debug=False)
+            raw = None
+            if not labeling_mode:
+                importlib.reload(_raw_cfg)
+                raw = RawStringSearcher()
+                raw.add_word_from_list(_raw_cfg.RAW_STRING_RULES)
+
+            seen_paragraphs = set()
+
+            for fi, file in enumerate(files):
+                if state["aborted"]:
+                    break
+                state["progress"] = fi
+                state["current_file"] = file.stem if hasattr(file, "stem") else str(file)
+
+                try:
+                    paragraphs = self._collect_paragraphs(file)
+                except Exception as e:
+                    # 파일 하나 실패해도 계속 진행
+                    state["error"] = f"{state['current_file']}: {e}"
+                    continue
+                if not paragraphs:
+                    continue
+
+                all_tokens = self._tkn.tokenize(paragraphs)
+
+                for paragraph, tokens in zip(paragraphs, all_tokens):
+                    if state["aborted"]:
+                        break
+                    
+                    # 중복 문장 필터링
+                    if paragraph in seen_paragraphs:
+                        continue
+                    seen_paragraphs.add(paragraph)
+
+                    errors = list(spell.check(tokens))
+                    if raw is not None:
+                        errors.extend(raw.search(paragraph))
+
+                    if not errors:
+                        continue
+
+                    if labeling_mode:
+                      # 오류 1개당 1개의 라벨링 항목으로 쪼개기
+                      for e in errors:
+                          # UI에는 현재 타겟 에러만 하이라이트
+                          highlighted = highlight_text(paragraph, [e])
+                          
+                          start = e.start_index
+                          end = e.end_index
+                          
+                          target_text = f"{paragraph[:start]}<TARGET>{paragraph[start:end]}</TARGET>{paragraph[end:]}"
+                          
+                          target_text = target_text.replace("  ",  " ")
+                          
+                          state["label_queue"].append({
+                              "paragraph": paragraph,
+                              "highlighted": highlighted,
+                              "target_text": target_text,
+                              "rule_id": e.rule_id if e.rule_id else "-",
+                          })
+                    else:
+                        highlighted = highlight_text(paragraph, errors)
+                        error_types = "\n".join({get_error_type_name(e) for e in errors})
+                        msg = "\n".join(e.error_message for e in errors)
+                        debug_path = "\n".join((e.debug_path or "") for e in errors)
+                        state["results"].append({
+                            "file": state["current_file"],
+                            "paragraph": paragraph,
+                            "error_type": error_types,
+                            "highlighted": highlighted,
+                            "msg": msg,
+                        })
+
+            state["progress"] = state["total"]
+            if labeling_mode and state["label_queue"] and not state["aborted"]:
+                state["stage"] = "labeling"
+            else:
+                state["stage"] = "done"
+        except Exception as e:
+            state["error"] = str(e)
+            state["stage"] = "done"
+        finally:
+            state["running"] = False
+
+    def get_folder_progress(self) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"running": False, "stage": "idle",
+                    "progress": 0, "total": 0,
+                    "current_file": "", "error": None,
+                    "results_count": 0, "label_queue_count": 0,
+                    "labeling_mode": False}
+        return {
+            "running": state["running"],
+            "stage": state["stage"],
+            "progress": state["progress"],
+            "total": state["total"],
+            "current_file": state["current_file"],
+            "error": state["error"],
+            "results_count": len(state["results"]),
+            "label_queue_count": len(state["label_queue"]),
+            "labeling_mode": state["labeling_mode"],
+        }
+
+    def get_folder_results(self) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"results": []}
+        return {"results": state["results"]}
+
+    def get_next_label_item(self) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"done": True, "idx": 0, "total": 0}
+        idx = state["label_idx"]
+        queue = state["label_queue"]
+        total = len(queue)
+        if idx >= total or state["aborted"]:
+            return {"done": True, "idx": idx, "total": total}
+        item = queue[idx]
+        return {
+            "done": False,
+            "idx": idx + 1,
+            "total": total,
+            "highlighted": item["highlighted"],
+            "rule_id": item.get("rule_id", "-"),
+        }
+
+    def submit_label(self, label: str) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"error": "상태 없음"}
+        idx = state["label_idx"]
+        queue = state["label_queue"]
+        if idx >= len(queue):
+            return {"done": True}
+
+        if label != "SKIP":
+            item = queue[idx]
+            text = (item["target_text"]
+                    .replace("\t", " ")
+                    .replace("\n", " ")
+                    .replace("\r", " "))
+            rule_id =  item.get("rule_id") or "-"
+            
+            state["labeled_data"].append(f"{label}\t{rule_id}\t{text}\n")
+
+        state["history"].append({"idx": idx, "action": label})
+        state["label_idx"] = idx + 1
+
+        if state["label_idx"] >= len(queue):
+            save_res = self._save_labeled_data()
+            if save_res.get("error"):
+                return {"error": f"저장 실패: {save_res['error']}"}
+            return {"done": True}
+
+        return {"ok": True, "remaining": len(queue) - state["label_idx"]}
+
+    def go_back_label(self) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"error": "상태 없음"}
+        
+        history = state.get("history", [])
+        if not history:
+            return {"error": "이전 항목이 없습니다."}
+        
+        last_action = history.pop()
+        prev_idx = last_action["idx"]
+        action = last_action["action"]
+        
+        if action != "SKIP" and state.get("labeled_data"):
+            state["labeled_data"].pop()
+        
+        state["label_idx"] = prev_idx
+        return {"ok": True}
+
+    def abort_labeling(self) -> dict:
+        state = self._folder_state
+        if not state:
+            return {"error": "상태 없음"}
+
+        labeled_data = state.get("labeled_data", [])
+        if labeled_data and self._window:
+            do_save = self._window.create_confirmation_dialog(
+                "저장 확인",
+                f"지금까지 작업한 {len(labeled_data)}건의 라벨링 결과를 저장하시겠습니까?\n(기존 파일은 덮어쓰기됩니다)"
+            )
+            if do_save:
+                save_res = self._save_labeled_data()
+                if save_res.get("error"):
+                    return {"error": f"저장 실패: {save_res['error']}"}
+
+        state["aborted"] = True
+        if state["stage"] == "labeling":
+            state["stage"] = "done"
+        return {"ok": True}
+    
+    def get_debug_path(self, result_idx: int) -> dict:
+      if err := self._ensure_ready():
+          return err
+      state = self._folder_state
+      if not state:
+          return {"error": "상태 없음"}
+      results = state["results"]
+      if result_idx < 0 or result_idx >= len(results):
+          return {"error": "잘못된 인덱스"}
+
+      item = results[result_idx]
+      paragraph = item.get("paragraph")
+      rule_name = state.get("rule_name")
+      if not paragraph or not rule_name:
+          return {"error": "재검사 정보 없음"}
+
+      # 캐시된 debug 인스턴스 사용 (rule_name 바뀌면 재빌드)
+      if (self._folder_debug_spell is None
+              or self._folder_debug_rule_name != rule_name):
+          try:
+              self._folder_debug_spell = self._build_folder_spell_checker(
+                  rule_name, debug=True
+              )
+              self._folder_debug_rule_name = rule_name
+          except Exception as e:
+              return {"error": f"debug 빌드 실패: {e}"}
+
+      try:
+          tokens = self._tkn.tokenize(paragraph)
+          errors = list(self._folder_debug_spell.check(tokens))
+          debug_path = "\n".join(
+              f"[{get_error_type_name(e)}] {e.error_message} :: {e.debug_path or ''}"
+              for e in errors
+          )
+          return {"debug_path": debug_path}
+      except Exception as e:
+          return {"error": str(e)}
 
 if __name__ == "__main__":
     api = Api()
@@ -836,4 +1531,5 @@ if __name__ == "__main__":
         height=680,
         text_select=True,
     )
+    api._window = window
     webview.start()
