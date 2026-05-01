@@ -886,59 +886,67 @@ _NOT_CERTAINS = [
     
 ]
 
+_LOANWORDS = [
+    *rule()
+    .form("브러쉬")
+    .msg("'브러쉬'가 올바른 표현입니다.")
+    .build(),
+]
+
 def rule() -> RuleBuilder:
     return RuleBuilder(SpellErrorType.NEED_ML_JUDGE)
 
 _NEED_ML_JUDGE = [
     *rule()
+    .id("형상_현상_오타")
     .tag_form(Tag.일반명사, "형상") # '현상'
     .msg("'현상'의 오타가 아닌가요?")
     .build(),
 
     *rule()
+    .id("뺐다_뺏다_오타")
     .tag_form(Tag.동사, "빼")
     .tag_form(Tag.선어말어미, "었")
     .msg("'뺏다'의 오타가 아닌가요?")
     .build(),
 
     *rule()
+    .id("띄다_띠다_오타")
     .tag_form(Tag.동사, "띄")
     .msg("'띠다'의 오기가 아닌가요?")
     .build(),
     
     *rule()
+    .id("붓기_부기_오타")
     .tag_form(Tag.동사규칙활용, "붓")
     .tag_form(Tag.명사형전성어미, "기")
     .msg("'부은 정도'는 '부기'가 올바른 표현입니다.")
     .build(),
     
     *rule()
+    .id("던가_든가_오타")
     .tag(Tag.긍정지정사)
     .tag_form(Tag.종결어미, "라던가")
     .msg("나열할 때는 '라든가'가 올바른 표현입니다.")
     .build(),
     
     *rule()
+    .id("아니오_아니요_오타")
     .form("아니")
     .form("오")
     .msg("존대의 의미라면 '아니요'입니다. '아니오'는 하게체의 말투입니다. ('아니라오' 같은 것)")
     .build(),
     
     *rule()
+    .id("회수_횟수_오타")
     .form("회수")
     .msg("'횟수(回数)'의 오타가 아닌가요?")
     .build(),
 
     *rule()
+    .id("캐롤_캐럴_오타")
     .tag_form(Tag.고유명사, "캐롤")
     .msg("'캐럴'로 써야 합니다.")
-    .build(),
-]
-
-_LOANWORDS = [
-    *rule()
-    .form("브러쉬")
-    .msg("'브러쉬'가 올바른 표현입니다.")
     .build(),
 ]
 

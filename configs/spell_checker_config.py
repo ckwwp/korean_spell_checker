@@ -6,7 +6,7 @@ from korean_spell_checker.configs import spell_checker_config_meaning, spell_che
 def rule() -> RuleBuilder:
     return RuleBuilder(SpellErrorType.TEST)
 
-_TEST_SPELL_CHECK_RULES = [
+TEST_SPELL_CHECK_RULES = [
     *rule()
     .tag(Tag.연결어미)
     .AND(tag(Tag.보조용언), forms({"않"})).if_not_spaced()
@@ -14,8 +14,14 @@ _TEST_SPELL_CHECK_RULES = [
     .msg("'{form[0]}다'를 앞 말과 띄어 써야 합니다.").build(),
 ]
 
-SPELL_CHECK_RULES = [
-    *_TEST_SPELL_CHECK_RULES
+def rule() -> RuleBuilder:
+    return RuleBuilder(SpellErrorType.NEED_ML_JUDGE)
+
+ML_LABELINGS = [
+    *rule()
+    .id("지_띄어쓰기")
+    .AND(tags({Tag.의존명사, Tag.대명사}), form("지")).if_spaced()
+    .msg("'지'를 붙여 써야 합니다.").build(),
 ]
 
 SPELL_CHECK_RULES: list[KoSpellRules] = [
