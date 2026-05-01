@@ -27,7 +27,7 @@ class _Transition:
     is_context: bool = False
 
 class _RuleNode:
-    __slots__ = ('tag_transitions', 'form_transitions', 'form_and_tag_transitions', 'batchim_transitions', 'any_batchim_transitions', 'fallback_transitions', '_all_transitions', '_optional_closure', 'output_message', 'output_path', 'error_type')
+    __slots__ = ('tag_transitions', 'form_transitions', 'form_and_tag_transitions', 'batchim_transitions', 'any_batchim_transitions', 'fallback_transitions', '_all_transitions', '_optional_closure', 'output_message', 'output_path', 'error_type', 'rule_id')
 
     def __repr__(self):
         n = len(self._all_transitions)
@@ -49,6 +49,7 @@ class _RuleNode:
         self.output_message: CompiledMessage | None = None
         self.error_type: SpellErrorType = SpellErrorType.NOT_SET
         self.output_path: str | None = None
+        self.rule_id: str = ""
         
     def get_optional_closure(self) -> set[_RuleNode]:
         """optional로 갈 수 있는 노드들을 BFS로 탐색하는 함수. 엡실론 클로저를 구현.
@@ -141,7 +142,7 @@ class SpellChecker:
             
         current = self._root
         path = []
-        conditions, msg, error_type = rules
+        conditions, msg, error_type, rule_id = rules
         
         if len(conditions) == 0:
             return
@@ -153,6 +154,7 @@ class SpellChecker:
             
         current.output_message = msg
         current.error_type = error_type
+        current.rule_id = rule_id
 
         if self._debug:
             current.output_path = "  →  ".join(path)
@@ -264,7 +266,7 @@ class SpellChecker:
 
             # ── Phase 2: 출력 수집 & 전이 탐색 ──
             next_cursors.clear()
-            current_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
+            current_step_errors: dict[str, tuple[SpellErrorType, int, int, str, str | None]] = {}
 
             for node, idxs in expanded_cursors.items():
                 start_idx, end_idx = idxs
@@ -277,6 +279,7 @@ class SpellChecker:
                         node.error_type,
                         tokens[start_idx].start,
                         tokens[end_idx].end,
+                        node.rule_id,
                         node.output_path
                     )
             
@@ -315,12 +318,13 @@ class SpellChecker:
                         next_cursors[target] = (new_start, new_end)
             
             # ── Phase 3: 에러 yield & 커서 스왑 ──
-            for msg, (err_type, start, end, output_path) in current_step_errors.items():
+            for msg, (err_type, start, end, rule_id, output_path) in current_step_errors.items():
                 yield SpellError(
                     error_type=err_type,
                     error_message=msg,
                     start_index=start,
                     end_index=end,
+                    rule_id=rule_id,
                     debug_path=output_path
                     )
             
@@ -328,7 +332,7 @@ class SpellChecker:
 
         # ── EOF epsilon: optional/NOT 전이를 엡실론으로 확장해 남은 출력 수집 ──
         if tokens:
-            final_step_errors: dict[str, tuple[SpellErrorType, int, int, str | None]] = {}
+            final_step_errors: dict[str, tuple[SpellErrorType, int, int, str, str | None]] = {}
 
             final_expanded: dict[_RuleNode, tuple[int, int]] = {}
             eof_queue = deque(active_cursors.items())
@@ -358,26 +362,28 @@ class SpellChecker:
                         error_type=node.error_type,
                         start=tokens[start_idx].start,
                         end=tokens[end_idx].end,
+                        rule_id=node.rule_id,
                         output_path=node.output_path
                     )
 
-            for msg, (err_type, start, end, output_path) in final_step_errors.items():
+            for msg, (err_type, start, end, rule_id, output_path) in final_step_errors.items():
                 yield SpellError(
                     error_type=err_type,
                     error_message=msg,
                     start_index=start,
                     end_index=end,
+                    rule_id=rule_id,
                     debug_path=output_path
                 )
     
-    def _update_shortest_match(self, storage: dict[str, tuple[SpellErrorType, int, int, str | None]], msg: str, error_type: SpellErrorType, start: int, end: int, output_path: str | None) -> None:
+    def _update_shortest_match(self, storage: dict[str, tuple[SpellErrorType, int, int, str, str | None]], msg: str, error_type: SpellErrorType, start: int, end: int, rule_id: str, output_path: str | None) -> None:
         if msg not in storage:
-            storage[msg] = (error_type, start, end, output_path)
+            storage[msg] = (error_type, start, end, rule_id, output_path)
         else:
-            _, old_start, old_end, _ = storage[msg]
+            _, old_start, old_end, _,  _ = storage[msg]
             old_length = old_end - old_start
             new_length = end - start
             
             # 더 짧은 것 선택, 길이 같으면 더 뒤에 있는 것
             if new_length < old_length or (new_length == old_length and start > old_start):
-                storage[msg] = (error_type, start, end, output_path)
+                storage[msg] = (error_type, start, end, rule_id, output_path)

@@ -1,19 +1,18 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::collections::VecDeque;
+use rustc_hash::{FxHashMap, FxHashSet};
 use pyo3::prelude::*;
 
 struct TrieNode {
-    children: HashMap<char, usize>,
-    output: HashSet<(String, usize, String)>,
+    children: FxHashMap<char, usize>,
+    output: FxHashSet<(String, usize, String, String)>,
     fail: usize,
 }
 
 impl TrieNode {
     fn new() -> Self {
         TrieNode {
-            children: HashMap::new(),
-            output: HashSet::new(),
+            children: FxHashMap::default(),
+            output: FxHashSet::default(),
             fail: 0,
         }
     }
@@ -35,7 +34,7 @@ impl RustRawStringSearcher {
         }
     }
 
-    fn add_word(&mut self, word: String, msg: String, error_type: String) -> PyResult<()> {
+    fn add_word(&mut self, word: String, msg: String, error_type: String, rule_id: String) -> PyResult<()> {
         if self.built {
             return Err(pyo3::exceptions::PyRuntimeError::new_err(
                 "cannot add words after build."
@@ -53,7 +52,7 @@ impl RustRawStringSearcher {
             }
             curr_node = self.nodes[curr_node].children[&ch];
         }
-        self.nodes[curr_node].output.insert((msg, char_count, error_type));
+        self.nodes[curr_node].output.insert((msg, char_count, error_type, rule_id));
 
         Ok(())
     }
@@ -85,7 +84,7 @@ impl RustRawStringSearcher {
 
                 let fail_idx = self.nodes[child_node].fail;
                 if !self.nodes[fail_idx].output.is_empty() {
-                    let fail_output: HashSet<_> = self.nodes[fail_idx].output.clone();
+                    let fail_output: FxHashSet<_> = self.nodes[fail_idx].output.clone();
                     self.nodes[child_node].output.extend(fail_output);
                 }
 
@@ -96,7 +95,7 @@ impl RustRawStringSearcher {
         self.built = true;
     }
 
-    fn search_raw(&mut self, word: &str) -> PyResult<Vec<(String, String, usize, usize)>> {
+    fn search_raw(&mut self, word: &str) -> PyResult<Vec<(String, String, usize, usize, String)>> {
         if self.nodes[0].children.is_empty() {
             return Err(pyo3::exceptions::PyValueError::new_err(
                 "You must have at least one word to search."
@@ -117,8 +116,8 @@ impl RustRawStringSearcher {
 
             if let Some(&next) = self.nodes[current].children.get(&ch) {
                 current = next;
-                for (msg, len, error_type) in self.nodes[current].output.iter() {
-                    result.push((error_type.clone(), msg.clone(), idx + 1 - len, idx + 1));
+                for (msg, len, error_type, rule_id) in self.nodes[current].output.iter() {
+                    result.push((error_type.clone(), msg.clone(), idx + 1 - len, idx + 1, rule_id.clone()));
                 }
             }
         }

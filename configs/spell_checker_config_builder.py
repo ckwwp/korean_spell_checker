@@ -10,10 +10,14 @@ from korean_spell_checker.utils.hangul import remove_batchim, replace_batchim
 from korean_spell_checker.configs.spell_checker_config_builder_parser import MessageTokenizer, MessageParser, TokenType, TagNode, TextNode, MethodNode, QuotedNode, TupleNode, MESSAGE_METHODS
 
 ErrorMessage: TypeAlias = str
+RuleId: TypeAlias = str
 RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]
-KoSpellRules: TypeAlias = tuple[RuleSteps, "CompiledMessage", SpellErrorType]
+KoSpellRules: TypeAlias = tuple[RuleSteps, "CompiledMessage", SpellErrorType, RuleId]
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
 MessagePart: TypeAlias = str | Callable[[list], str]
+
+tokenizer = MessageTokenizer()
+parser = MessageParser()
 
 class _DynamicPart:
     __slots__ = ('_fn', '_desc')
@@ -41,9 +45,6 @@ class CompiledMessage:
             part if isinstance(part, str) else part(tokens)
             for part in self._parts
         )
-
-tokenizer = MessageTokenizer()
-parser = MessageParser()
 
 def _last_hangul(s: str) -> str:
     for ch in reversed(s):
@@ -202,10 +203,11 @@ class _RuleStepData:
         return f"_RuleStepData(conditions={self.conditions}, spacing_rule={self.spacing_rule}, is_optional={self.is_optional}, is_context={self.is_context})"
 
 class RuleBuilder:
-    def __init__(self, error_type: SpellErrorType = SpellErrorType.NOT_SET):
+    def __init__(self, error_type: SpellErrorType):
         self.steps: list[_RuleStepData] = []
         self.message: str
         self.error_type: SpellErrorType = error_type
+        self.rule_id: str = ""
 
     def tag(self, tag: str):
         self.steps.append(_RuleStepData([TagCondition(tag=tag)]))
@@ -249,6 +251,19 @@ class RuleBuilder:
     
     def length(self, n: int):
         self.steps.append(_RuleStepData([LengthCondition(length=n)]))
+        return self
+    
+    def AND(self, *params: AndParam):
+        optimized = _optimize_and(params)
+        self.steps.append(_RuleStepData(optimized))
+        return self
+
+    def OR(self, *conditions: Condition):
+        self.steps.append(_RuleStepData(list(conditions)))
+        return self
+    
+    def NOT(self, condition: "Condition | _TagSet | _FormSet"):
+        self.steps.append(_RuleStepData([NotCondition(_resolve_to_condition(condition))]))
         return self
 
     def _set_space(self, spacing_rule: SpacingRule):
@@ -309,29 +324,29 @@ class RuleBuilder:
         # init에서 설정하고 있지만 중간에 개별적으로 바꾸고 싶을 경우를 위해 메서드 준비
         self.error_type = error_type
         return self
-
-    def AND(self, *params: AndParam):
-        optimized = _optimize_and(params)
-        self.steps.append(_RuleStepData(optimized))
-        return self
-
-    def OR(self, *conditions: Condition):
-        self.steps.append(_RuleStepData(list(conditions)))
-        return self
     
-    def NOT(self, condition: "Condition | _TagSet | _FormSet"):
-        self.steps.append(_RuleStepData([NotCondition(_resolve_to_condition(condition))]))
+    def id(self, rule_id: str):
+        self.rule_id = rule_id
         return self
 
     def _validate_buildable(self):
+        errors = []
         if not self.steps:
-            raise ValueError(f"At least one condition must be added.\nconditions: {self.steps}")
+            errors.append("At least one condition must be added.")
         if self.message is None:
-            raise ValueError(f"Error message must be set using msg().\nconditions: {self.steps}")
+            errors.append("Error message must be set using msg().")
         if self.error_type == SpellErrorType.NOT_SET:
-            raise ValueError(f"Error type has not be set. use errtype() to set error's type.\nconditions: {self.steps}")
-        if not any(not s.is_context for s in self.steps):
-            raise ValueError(f"At least one non-context condition must be added.\nconditions: {self.steps}")
+            errors.append("Error type has not been set. Use errtype() to set it.")
+        elif self.error_type == SpellErrorType.NEED_ML_JUDGE and self.rule_id is None:
+            errors.append("NEED_ML_JUDGE type requires a rule_id.")
+        if self.steps and not any(not s.is_context for s in self.steps):
+            errors.append("At least one non-context condition must be added.")
+
+        if errors:
+            raise ValueError(
+                "Spell build failed:\n- " + "\n- ".join(errors)
+                + f"\nconditions: {self.steps}"
+            )
 
     def build(self) -> list[KoSpellRules]:
         self._validate_buildable()
@@ -345,7 +360,7 @@ class RuleBuilder:
                 for cond, step in zip(combo, self.steps)
             ]
             compiled_msg = compile_message(parsed_msg, combo, source=self.message)
-            results.append((rule_steps, compiled_msg, self.error_type))
+            results.append((rule_steps, compiled_msg, self.error_type, self.rule_id))
 
         return results
 
@@ -450,7 +465,3 @@ def AND(*params: AndParam) -> Condition:
     if len(optimized) == 1:
         return optimized[0]
     return OrCondition(conditions=tuple(optimized))
-
-if __name__ == "__main__":
-    rule = RuleBuilder(SpellErrorType.TEST)
-    print(rule.form("ㅇㅇ").msg('{dtag[0]}').build())

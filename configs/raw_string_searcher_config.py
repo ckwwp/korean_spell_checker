@@ -2,13 +2,13 @@ from itertools import product
 
 from korean_spell_checker.models.interface import SpellErrorType
 
-def make_errors_from_range(start_range: str, end_range: str, msg: str) -> tuple[list[str], str]:
+def make_errors_from_range(start_range: str, end_range: str, msg: str) -> tuple[list[str], str, str]:
     result = []
     for i in range(ord(start_range), ord(end_range) + 1):
-        result.append(i)
-    return (result, msg)
+        result.append(chr(i))
+    return (result, msg, "")
 
-def make_single_character_errors_from_str(string: str, msg: str) -> tuple[tuple[str], str]:
+def make_single_character_errors_from_str(string: str, msg: str) -> tuple[list[str], str]:
     result = []
     for char in string:
         result.append(char)
@@ -24,7 +24,7 @@ def make_n_combined_errors(
     errors = all_combinations - set(block_list)
     
     if not errors:
-        return []
+        return ([], msg)
     
     return (list(errors), msg)
 
@@ -152,7 +152,6 @@ _SPELL_MISS_LIST: list[tuple[list[str], str]] = [
     (["어물쩡", "어물적", "어물정"], "'어물쩍'이 올바른 표현입니다."),
     (["본둥만둥", "본 둥 만 둥", "본둥 만둥"], "'본체만체', '본척만척'이 올바른 표현입니다."),
     (["헤까닥"], "'회까닥'이 올바른 표현입니다."),
-    (["뭉테기", "뭉터기"], "'뭉텅이'가 올바른 표현입니다."),
     
     (["일조양", "증가양", "할당양", "작업양", "강수양", "노동양", "가사양", "함유양", "섭취양", "적정양", "적당양"], "'량'이 올바른 표기입니다."),
     (["기름량", "바람량", "소금량", "설탕량", "칼슘량", "빨래량", "얼음량", "고기량", "잉크량", "에너지량", "나트륨량", "칼로리량", "알코올량", "쓰레기량"], "'양'이 올바른 표기입니다."),
@@ -200,6 +199,8 @@ _SPACING_MISS = [
     (["이모 저모"], "'이모저모'로 붙여 써야 합니다."),
     (["들락 날락"], "'들락날락'으로 붙여 써야 합니다."),
     (["여기 저기"], "'여기저기'로 붙여 써야 합니다."),
+    (["너덜 너덜"], "'너덜너덜'로 붙여 써야 합니다."),
+    (["이래라 저래라"], "'이래라저래라'로 붙여 써야 합니다."),
     
     (["롤모델"], "'롤 모델'로 띄어 써야 합니다."),
     (["이래봬도"], "'이래 봬도'로 띄어 써야 합니다."),
@@ -234,10 +235,10 @@ _NEED_ML_JUDGE = [
     (["고 말고"], "어미인 경우에는 '~고말고'로 붙여 써야 합니다.")
 ]
 
-RAW_STRING_RULES: tuple[list, SpellErrorType] = [
-    (_SPELL_MISS_LIST, SpellErrorType.SPELLING_RAW),
-    (_MARKS, SpellErrorType.SPELLING_RAW),
-    (_SPACING_MISS, SpellErrorType.SPACING_RAW),
-    (_MEANING_COMPLICT, SpellErrorType.MEANING_RAW),
-    (_LOANWORDS, SpellErrorType.LOANWORD_RAW),
+RAW_STRING_RULES: tuple[list, SpellErrorType, str] = [
+    (_SPELL_MISS_LIST, SpellErrorType.SPELLING_RAW, ""),
+    (_MARKS, SpellErrorType.SPELLING_RAW, ""),
+    (_SPACING_MISS, SpellErrorType.SPACING_RAW, ""),
+    (_MEANING_COMPLICT, SpellErrorType.MEANING_RAW, ""),
+    (_LOANWORDS, SpellErrorType.LOANWORD_RAW, ""),
 ]

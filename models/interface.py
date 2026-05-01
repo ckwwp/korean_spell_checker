@@ -37,6 +37,7 @@ class SpellError:
     error_message: str
     start_index: int
     end_index: int
+    rule_id: str
     debug_path: str | None = None
 
 class Tag(StrEnum):
