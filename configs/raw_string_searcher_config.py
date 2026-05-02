@@ -29,17 +29,19 @@ def make_n_combined_errors(
     return (list(errors), msg)
 
 _SPELL_MISS_LIST: list[tuple[list[str], str]] = [
-    make_single_character_errors_from_str("겂겻겿궃궛깆껶꼇꺠꺴꺵꼐꽅궅굷됬됫돳됀댸덋덌딫돨됄됌딭듸딋딲떄뗴떘맟삷샃섵섳슽싲싳싷썌씃읇잏짞짦뷴벛봽빝뺴뼤뺼빾뺵뺶뻈젋졋쫒짗쨰쪠쩻쨋쪴쩄찣찠찿탘핢햡햬헀햿횠횄헁", "오타를 확인해 주세요."),
+    make_single_character_errors_from_str("겂겻겿궃궛깆껶꼇꺠꺴꺵꼐꽅궅굷됬됫돳됀댸덋덌딫돨됄됌딭듸딋딲떢떄뗴떘맟삷샃섵섳슽싲싳싷썌씃읇잏짞짦뷴벛봽빝뺴뼤뺼빾뺵뺶뻈젋졋쫒짗쨰쪠쩻쨋쪴쩄찣찠찿탘핢햡햬헀햿횠횄헁", "오타를 확인해 주세요."),
 
     make_n_combined_errors(["꺼림칙", "께름칙"], "'꺼림칙하다'가 올바른 표현입니다.", "꺼께", "름림", "직칙"),
     make_n_combined_errors(["짐작건대", "추측건대", "생각건대"], "'~건대'가 올바른 표현입니다.", "짐추생", "작측각", "컨건", "데대"),
     make_n_combined_errors(["텔레비전"], "'텔레비전'의 오타가 아닌가요?", "탤텔", "래레", "비", "전"),
 
     (["하빈다", "이빈다", "스빈다"], "~ㅂ니다의 오기가 아닌가요?"),
+    (["어쨋든", "어쨌뜬", "어쨋뜬"], "'어쨌든'의 오기가 아닌가요?"),
     (["있따"], "'있다'의 오기가 아닌가요?"),
     (["았따"], "'았다'의 오기가 아닌가요?"),
     (["없따"], "'없다'의 오기가 아닌가요?"),
     (["차된되"], "'차단되다'의 오기가 아닌가요?"),
+    (["꽃았", "꽃읍", "꽃혀", "꽃여", "꽃힌"], "'꽂다'의 오기가 아닌가요?"),
     (["뒤치닦거리", "뒤치닥거리"], "'뒤치다꺼리'의 오기가 아닌가요?"),
 
     (["멋데로"], "'멋대로'의 오기가 아닌가요?"),
@@ -222,11 +224,16 @@ _MEANING_COMPLICT = [
     (["흔자국", "흔 자국"], "'흔(痕)'에 이미 '자국'의 의미가 포함되어 있습니다."),
 ]
 
-_LOANWORDS = [
+_LOANWORDS_SPELLING = [
     (["썬그라스", "썬글라스", "썬글래스", "선글래스"], "'선글라스'가 올바른 표기입니다."),
     (["퀼리티"], "'퀄리티'가 올바른 표기입니다."),
     (["어드벤쳐", "어드밴처", "어드밴쳐"], "'어드벤처'가 올바른 표기입니다."),
     (["에피타이저"], "'애피타이저'가 올바른 표기입니다."),
+]
+
+_LOANWORDS_SPACING = [
+    (["나일 강"], "'나일강'으로 붙여 써야 합니다."),
+    (["가스 버너"], "'가스버너'로 붙여 써야 합니다."),
 ]
 
 _NEED_ML_JUDGE = [
@@ -240,5 +247,6 @@ RAW_STRING_RULES: tuple[list, SpellErrorType, str] = [
     (_MARKS, SpellErrorType.SPELLING_RAW, ""),
     (_SPACING_MISS, SpellErrorType.SPACING_RAW, ""),
     (_MEANING_COMPLICT, SpellErrorType.MEANING_RAW, ""),
-    (_LOANWORDS, SpellErrorType.LOANWORD_RAW, ""),
+    (_LOANWORDS_SPELLING, SpellErrorType.SPELLING_RAW, ""),
+    (_LOANWORDS_SPACING, SpellErrorType.SPACING_RAW, ""),
 ]

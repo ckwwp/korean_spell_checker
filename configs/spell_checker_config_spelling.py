@@ -853,6 +853,13 @@ _MIF = [
     .tag_form(Tag.동사, "날으")
     .msg("'날다'는 '나셨다', '날면'으로 써야 합니다.")
     .build(),
+    
+    *rule()
+    .tags({Tag.형용사, Tag.형용사불규칙활용})
+    .tag_form(Tag.연결어미, "지")
+    .tag_form(Tag.보조용언, "않")
+    .form("는")
+    .msg("'merge(({dform[0]}, {dtag[0]}), (\"지\", \"연결어미\")) 않은'이 올바른 표현입니다.").build(),
 ]
 
 _SHIFT_MISS = [

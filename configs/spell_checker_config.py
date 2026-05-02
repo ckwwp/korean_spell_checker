@@ -8,10 +8,11 @@ def rule() -> RuleBuilder:
 
 TEST_SPELL_CHECK_RULES = [
     *rule()
-    .tag(Tag.연결어미)
-    .AND(tag(Tag.보조용언), forms({"않"})).if_not_spaced()
-    .AND(tag(Tag.관형사형전성어미), forms({"는", "은"}))
-    .msg("'{form[0]}다'를 앞 말과 띄어 써야 합니다.").build(),
+    .tags({Tag.형용사, Tag.형용사불규칙활용})
+    .tag_form(Tag.연결어미, "지")
+    .tag_form(Tag.보조용언, "않")
+    .form("는")
+    .msg("'merge(({dform[0]}, {dtag[0]}), (\"지\", \"연결어미\")) 않은'이 올바른 표현입니다.").build(),
 ]
 
 def rule() -> RuleBuilder:
