@@ -641,7 +641,7 @@ _NNB = [
     .tag(Tag.숫자)
     .tag_form(Tag.명사파생접미사, "여")
     .AND(tag(Tag.의존명사), forms({"개", "개국", "명", "곳", "초", "분", "시간", "일", "주", "개월", "년", "군데", "차례"})).if_not_spaced()
-    .msg("'{form[1]}'batchim(\"을\",\"를\") 앞 말과 띄어 써야 합니다.").build(),
+    .msg("'{dform[0]}{form[0]} {form[1]}'batchim(\"으로\",\"로\") 띄어 써야 합니다.").build(),
     
     *rule()
     .tags({Tag.일반명사, Tag.고유명사, Tag.대명사, Tag.명사파생접미사})
@@ -1999,6 +1999,11 @@ _VV = [
     .tag_form(Tag.일반부사, "계속")
     .tag_form(Tag.동사, "하").if_spaced()
     .msg("'계속하다'로 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .tag(Tag.일반명사)
+    .tag_form(Tag.동사, "부리").if_not_spaced()
+    .msg("'{dform[0]} 부리다'로 띄어 써야 합니다.").build(),
 ]
 
 _NNG_VV = [
@@ -2519,6 +2524,17 @@ _JX = [
     .tag_form(Tag.일반명사, "때").if_not_spaced()
     .tag_form(Tag.보조사, "도")
     .msg("'시도 때도'로 띄어 써야 합니다.").build(),
+    
+    *rule()
+    .tag_form(Tag.연결어미, "게")
+    .tag_form(Tag.보조사, "나마").if_spaced()
+    .msg("'~게나마'로 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .tag_form(Tag.보조사, "야")
+    .tag_form(Tag.일반명사, "말").if_spaced()
+    .tag_form(Tag.부사격조사, "로")
+    .msg("'~야말로'로 붙여 써야 합니다.").build(),
 ]
 
 _JKB = [
@@ -2547,6 +2563,13 @@ _EF = [
     .AND(tag(Tag.연결어미), forms({"는군", "군"}))
     .tag_form(Tag.감탄사, "그래").if_spaced()
     .msg("'~군 뒤의 '그래'는 어미이므로 앞 말과 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .id("EF_잖아_붙여쓰기")
+    .tags({Tag.대명사, Tag.일반명사, Tag.고유명사})
+    .tag(Tag.긍정지정사).if_spaced()
+    .tag_form(Tag.종결어미, "잖아")
+    .msg("'{dform[0]}잖아'로 붙여 써야 합니다.").build(),
 ]
 
 _EC = [
@@ -2590,6 +2613,14 @@ _EC = [
     .tag_form(Tag.형용사, "크").if_spaced()
     .msg("'크디크다'로 붙여 써야 합니다.").build(),
     
+    *rule()
+    .id("EC_고서_붙여쓰기")
+    .tag_form(Tag.동사파생접미사, "하")
+    .tag_form(Tag.연결어미, "고")
+    .tag_form(Tag.부사격조사, "서").if_spaced()
+    .any().opt()
+    .tag_form(Tag.연결어미, "라도")
+    .msg("'~하고서라도'로 붙여 써야 합니다.").build(),
 ]
 
 _ETM = [
@@ -2640,9 +2671,22 @@ _WORD_3 = [
 
 _LOANWORDS = [
     *rule()
+    .id("노하우_붙여쓰기")
     .tag_form(Tag.일반명사, "노")
     .tag_form(Tag.고유명사, "하우").if_spaced()
     .msg("'노하우'로 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .id("헤어스타일_붙여쓰기")
+    .tag_form(Tag.일반명사, "헤어")
+    .tag_form(Tag.일반명사, "스타일").if_spaced()
+    .msg("'헤어스타일'로 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .id("포비아_붙여쓰기")
+    .tags({Tag.고유명사, Tag.일반명사})
+    .tag_form(Tag.고유명사, "포비아").if_spaced()
+    .msg("'-phobia'는 접미사이므로, 앞 말에 붙여 써야 합니다.").build(),
 ]
 
 def rule() -> RuleBuilder:
