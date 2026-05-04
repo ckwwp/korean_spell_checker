@@ -5,7 +5,7 @@ import pickle
 import re
 import sys
 import threading
-from pathlib import Path
+from datetime import datetime
 
 if sys.stdout is None:
     sys.stdout = open(os.devnull, 'w')
@@ -1169,12 +1169,13 @@ class Api:
         return {"folder": result[0]}
 
     def pick_save_file(self) -> dict:
+        tstamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         if not self._window:
             return {"error": "window not ready"}
         try:
             result = self._window.create_file_dialog(
                 webview.SAVE_DIALOG,
-                save_filename="labels.tsv",
+                save_filename=f"labels_{tstamp}.tsv",
                 file_types=("TSV files (*.tsv)", "All files (*.*)")
             )
         except Exception as e:
@@ -1255,6 +1256,7 @@ class Api:
 
         try:
             with open(state["save_path"], "w", encoding="utf-8") as f:
+                f.write("label\trule_id\ttext\tstart\tend\n")
                 f.writelines(labeled_data)
             return {"ok": True}
         except Exception as e:
@@ -1320,14 +1322,11 @@ class Api:
                           start = e.start_index
                           end = e.end_index
                           
-                          target_text = f"{paragraph[:start]}<TARGET>{paragraph[start:end]}</TARGET>{paragraph[end:]}"
-                          
-                          target_text = target_text.replace("  ",  " ")
-                          
                           state["label_queue"].append({
                               "paragraph": paragraph,
                               "highlighted": highlighted,
-                              "target_text": target_text,
+                              "start": start,
+                              "end": end,
                               "rule_id": e.rule_id if e.rule_id else "-",
                           })
                     else:
@@ -1409,13 +1408,15 @@ class Api:
 
         if label != "SKIP":
             item = queue[idx]
-            text = (item["target_text"]
+            text = (item["paragraph"]
                     .replace("\t", " ")
                     .replace("\n", " ")
                     .replace("\r", " "))
-            rule_id =  item.get("rule_id") or "-"
-            
-            state["labeled_data"].append(f"{label}\t{rule_id}\t{text}\n")
+            rule_id = item.get("rule_id") or "-"
+            start = item["start"]
+            end = item["end"]
+
+            state["labeled_data"].append(f"{label}\t{rule_id}\t{text}\t{start}\t{end}\n")
 
         state["history"].append({"idx": idx, "action": label})
         state["label_idx"] = idx + 1
