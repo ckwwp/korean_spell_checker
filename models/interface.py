@@ -30,6 +30,7 @@ class SpellError:
         error_message (str): 발생한 에러에 대한 상세 메시지.
         start_index (int): 에러가 발생한 부분의 시작 인덱스.
         end_index (int): 에러가 발생한 부분의 끝 인덱스.
+        rule_id (str): 규칙의 id.
         debug_path (str | None): NFA 엔진 경로 추적용 속성.
 
     """
@@ -109,7 +110,6 @@ class Tag(StrEnum):
     사용자정의태그2 = 'USER2'
     사용자정의태그3 = 'USER3'
     사용자정의태그4 = 'USER4'
-    끝 = '__EOF__'
     
 class TagGroup:
     체언 = {Tag.일반명사,
