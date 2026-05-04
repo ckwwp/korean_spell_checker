@@ -13,8 +13,31 @@ ErrorMessage: TypeAlias = str
 RuleId: TypeAlias = str
 RuleSteps: TypeAlias = list[tuple[Condition, SpacingRule, bool, bool]]
 KoSpellRules: TypeAlias = tuple[RuleSteps, "CompiledMessage", SpellErrorType, RuleId]
+
+# Rust용 인코딩 형식
+# step: (ConditionEncoded, spacing: int, is_optional: bool, is_context: bool)
+EncodedRuleSteps: TypeAlias = list[tuple[ConditionEncoded, int, bool, bool]]
+EncodedKoSpellRules: TypeAlias = tuple[EncodedRuleSteps, "CompiledMessage", SpellErrorType, RuleId]
+
 AndParam: TypeAlias = "Condition | _TagSet | _FormSet"
 MessagePart: TypeAlias = str | Callable[[list], str]
+
+
+class _StringInterner:
+    """문자열 → u32 intern id 관리."""
+    def __init__(self):
+        self._map: dict[str, int] = {}
+        self._strings: list[str] = []
+
+    def intern(self, s: str) -> int:
+        if s not in self._map:
+            self._map[s] = len(self._strings)
+            self._strings.append(s)
+        return self._map[s]
+
+    @property
+    def strings(self) -> list[str]:
+        return self._strings
 
 tokenizer = MessageTokenizer()
 parser = MessageParser()
@@ -353,7 +376,7 @@ class RuleBuilder:
 
         results: list[KoSpellRules] = []
         parsed_msg = parser.parse(tokenizer.tokenize(self.message), source=self.message)
-        
+
         for combo in product(*(step.conditions for step in self.steps)):
             rule_steps: RuleSteps = [
                 (cond, step.spacing_rule, step.is_optional, step.is_context)
@@ -361,6 +384,23 @@ class RuleBuilder:
             ]
             compiled_msg = compile_message(parsed_msg, combo, source=self.message)
             results.append((rule_steps, compiled_msg, self.error_type, self.rule_id))
+
+        return results
+
+    def build_encoded(self, interner: _StringInterner) -> list[EncodedKoSpellRules]:
+        """Rust SpellChecker용 인코딩 빌드. interner는 공유 StringInterner."""
+        self._validate_buildable()
+
+        results: list[EncodedKoSpellRules] = []
+        parsed_msg = parser.parse(tokenizer.tokenize(self.message), source=self.message)
+
+        for combo in product(*(step.conditions for step in self.steps)):
+            encoded_steps: EncodedRuleSteps = [
+                (cond.encode(interner.intern), step.spacing_rule.value, step.is_optional, step.is_context)
+                for cond, step in zip(combo, self.steps)
+            ]
+            compiled_msg = compile_message(parsed_msg, combo, source=self.message)
+            results.append((encoded_steps, compiled_msg, self.error_type, self.rule_id))
 
         return results
 

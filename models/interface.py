@@ -1,5 +1,6 @@
+from __future__ import annotations
 from enum import StrEnum, Enum, auto
-from typing import  Protocol
+from typing import Protocol
 from dataclasses import dataclass
 
 class SpellErrorType(Enum):
@@ -40,6 +41,8 @@ class SpellError:
     end_index: int
     rule_id: str
     debug_path: str | None = None
+
+TAG_TO_INT: dict[str, int] = {}  # populated after Tag definition
 
 class Tag(StrEnum):
     일반명사 = 'NNG'
@@ -110,7 +113,9 @@ class Tag(StrEnum):
     사용자정의태그2 = 'USER2'
     사용자정의태그3 = 'USER3'
     사용자정의태그4 = 'USER4'
-    
+
+TAG_TO_INT.update({tag.value: i for i, tag in enumerate(Tag)})
+
 class TagGroup:
     체언 = {Tag.일반명사,
             Tag.고유명사,
