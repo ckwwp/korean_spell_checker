@@ -18,11 +18,25 @@ TEST_SPELL_CHECK_RULES = [
 def rule() -> RuleBuilder:
     return RuleBuilder(SpellErrorType.NEED_ML_JUDGE)
 
-ML_LABELINGS = [
+ML_TRAINED = [
     *rule()
     .id("지_띄어쓰기")
     .AND(tags({Tag.의존명사, Tag.대명사}), form("지")).if_spaced()
     .msg("'지'를 붙여 써야 합니다.").build(),
+    
+    *rule()
+    .id("같이_붙여쓰기")
+    .tags({Tag.일반명사, Tag.고유명사, Tag.명사형전성어미, Tag.명사파생접미사, Tag.대명사, Tag.숫자, Tag.알파벳}).context()
+    .form("같이").if_spaced()
+    .msg("~처럼의 의미일 때는 '같이'를 붙여 써야 합니다.").build(),
+]
+
+ML_LABELINGS = [
+    *rule()
+    .id("같이_붙여쓰기")
+    .tags({Tag.일반명사, Tag.고유명사, Tag.명사형전성어미, Tag.명사파생접미사, Tag.대명사, Tag.숫자, Tag.알파벳}).context()
+    .form("같이").if_spaced()
+    .msg("~처럼의 의미일 때는 '같이'를 붙여 써야 합니다.").build(),
 ]
 
 SPELL_CHECK_RULES: list[KoSpellRules] = [
